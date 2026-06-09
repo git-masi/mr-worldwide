@@ -1,0 +1,38 @@
+{
+  "name": "api",
+  "version": "1.0.0",
+  "license": "MIT",
+  "scripts": {
+    "dev": "source .env && tsx --watch src/index.ts",
+    "db:start": "docker compose --env-file .env up -d",
+    "db:generate": "dotenv -e .env -- prisma generate",
+    "db:push": "dotenv -e .env -- prisma db push",
+    "db:migrate": "dotenv -e .env -- prisma migrate dev",
+    "db:studio": "dotenv -e .env -- prisma studio",
+    "db:seed": "dotenv -e .env -- prisma db seed",
+    "db:validate": "dotenv -e .env -- prisma validate"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "7.8.0",
+    "@prisma/client": "7.8.0",
+    "cors": "^2.8.6",
+    "express": "5.2.1",
+    "morgan": "^1.11.0",
+    "pg": "8.21.0"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@faker-js/faker": "^10.4.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "5.0.5",
+    "@types/express-serve-static-core": "^5.1.1",
+    "@types/morgan": "^1.9.10",
+    "@types/node": "25.9.1",
+    "@types/pg": "8.20.0",
+    "dotenv": "17.3.1",
+    "dotenv-cli": "^11.0.0",
+    "prisma": "7.8.0",
+    "tsx": "4.22.4",
+    "typescript": "6.0.3"
+  }
+}

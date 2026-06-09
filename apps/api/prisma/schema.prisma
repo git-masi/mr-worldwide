@@ -1,0 +1,44 @@
+generator client {
+  provider = "prisma-client"
+  output   = "./generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Hotel {
+  id         BigInt    @id @default(autoincrement())
+  name       String
+  totalRooms Int
+  bookings   Booking[]
+
+  @@map("hotels")
+}
+
+model Booking {
+  id         BigInt   @id @default(autoincrement())
+  hotelId    BigInt   @map("hotel_id")
+  customerId BigInt   @map("customer_id")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  checkIn    DateTime @map("check_in") @db.Timestamptz
+  checkOut   DateTime @map("check_out") @db.Timestamptz
+
+  hotel    Hotel    @relation(fields: [hotelId], references: [id])
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@map("bookings")
+}
+
+// You can imagine that some customers are users of the application but not all users are customers.
+// This enables a "check out as guest" workflow.
+model Customer {
+  id        BigInt    @id @default(autoincrement())
+  firstName String
+  lastName  String
+  email     String
+  bookings  Booking[]
+  // Add nullable user ID if/when users are added in the future.
+
+  @@map("customers")
+}
