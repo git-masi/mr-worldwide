@@ -27,7 +27,6 @@ out/
 build
 dist
 
-
 # Logs
 logs
 *.log
@@ -40,3 +39,6 @@ lerna-debug.log*
 # Misc
 .DS_Store
 *.pem
+
+# Generated files
+generated/
