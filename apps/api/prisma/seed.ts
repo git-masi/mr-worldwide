@@ -4,6 +4,11 @@ import { faker } from "@faker-js/faker";
 import { Prisma } from "./generated/browser";
 import { Temporal } from "temporal-polyfill";
 import { range } from "@repo/numbers/range";
+import { createWriteStream, createReadStream } from "node:fs";
+import { once } from "node:events";
+import pg from "pg";
+import { from as copyFrom } from "pg-copy-streams";
+
 import {
   createBookingData,
   getCreatedAtDate,
@@ -17,10 +22,19 @@ const adapter = new PrismaPg({
 
 const prisma = new PrismaClient({ adapter });
 
-const NUM_HOTELS = 1000;
+// const NUM_HOTELS = 1000;
+const NUM_HOTELS = 10;
 const MIN_HOTEL_ROOMS = 10;
 const MAX_HOTEL_ROOMS = 100;
-const NUM_CUSTOMERS = 10_000;
+// const NUM_CUSTOMERS = 10_000;
+const NUM_CUSTOMERS = 10;
+
+// This allows `BigInt` values to be serialized using `JSON.stringify`.
+// There are alternative ways to achieve the same results, but this is the easiest for our use case.
+// @ts-ignore
+BigInt.prototype.toJSON = function () {
+  return this.toString();
+};
 
 main()
   .catch((e) => {
@@ -44,7 +58,9 @@ async function main() {
   const customers = await createCustomers();
   console.log(`✅ Created customers`);
 
-  await createBookings(hotels, customers);
+  const path = "./temp/bookings.csv";
+
+  await createBookings(hotels, customers, path);
 
   console.log(`✅ Created bookings`);
 }
@@ -96,6 +112,7 @@ function createCustomers() {
 async function createBookings(
   hotels: { id: bigint; totalRooms: number }[],
   customers: { id: bigint }[],
+  path: string,
 ) {
   const now = Temporal.Now.plainDateISO();
   const oneYearFromNow = now.add({ years: 1 });
@@ -103,23 +120,91 @@ async function createBookings(
   const shouldAddBooking = () => faker.datatype.boolean({ probability: 0.7 });
   // Get a random customer
   const getCustomer = () => faker.helpers.arrayElement(customers);
-  const getCreatedAt = getCreatedAtDate(now);
+  const getCreatedAt = getCreatedAtDate(now.subtract({ days: 90 }));
 
-  let bookingData: Prisma.BookingCreateManyInput[] = [];
+  // ===================
+  // Write CSV with data
+  // ===================
 
-  for (const hotel of hotels) {
-    bookingData.push(
-      ...createBookingData({
-        start: now,
-        end: oneYearFromNow,
-        hotel,
-        shouldAddBooking,
-        getLengthOfStay,
-        getCustomer,
-        getCreatedAt,
-      }),
-    );
+  const output = createWriteStream(path);
+
+  async function write(chunk: string) {
+    if (!output.write(chunk)) {
+      await once(output, "drain");
+    }
   }
 
-  await prisma.booking.createMany({ data: bookingData });
+  await write("hotel_id,customer_id,created_at,check_in,check_out\n");
+
+  let bookingData: string[] = [];
+
+  for (const hotel of hotels) {
+    createBookingData({
+      start: now,
+      end: oneYearFromNow,
+      hotel,
+      shouldAddBooking,
+      getLengthOfStay,
+      getCustomer,
+      getCreatedAt,
+    }).forEach((booking) => {
+      bookingData.push(
+        `${booking.hotelId},${booking.customerId},${booking.createdAt},${booking.checkIn},${booking.checkOut}`,
+      );
+    });
+
+    console.log(`Created bookings for hotel ${hotel.id}`);
+
+    if (bookingData.length > 10_000) {
+      console.log(`Flushing bookings to disk`);
+      await write(bookingData.join("\n" + "\n"));
+      // Reset the array so it can be reused
+      bookingData.length = 0;
+    }
+  }
+
+  output.end();
+
+  await once(output, "finish");
+
+  // ================
+  // Stream CSV to DB
+  // ================
+
+  const client = new pg.Client({
+    host: "localhost",
+    port: 5432,
+    user: "postgres",
+    password: "postgres",
+    database: "mrww",
+  });
+
+  await client.connect();
+
+  const copyStream = client.query(
+    copyFrom(`
+      COPY bookings (
+        hotel_id,
+        customer_id,
+        created_at,
+        check_in,
+        check_out
+      )
+      FROM STDIN
+      WITH (
+        FORMAT csv,
+        HEADER true
+      )
+    `),
+  );
+
+  const fileStream = createReadStream(path);
+
+  await new Promise((res, rej) => {
+    fileStream.pipe(copyStream).on("finish", res).on("error", rej);
+
+    fileStream.on("error", rej);
+  });
+
+  await client.end();
 }
