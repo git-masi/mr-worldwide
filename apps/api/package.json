@@ -4,6 +4,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "source .env && tsx --watch src/index.ts",
+    "test:seed": "vitest --dir ./prisma/__tests__",
     "db:start": "docker compose --env-file .env up -d",
     "db:generate": "dotenv -e .env -- prisma generate",
     "db:push": "dotenv -e .env -- prisma db push",
@@ -20,12 +21,13 @@
     "express": "5.2.1",
     "morgan": "^1.11.0",
     "pg": "8.21.0",
-    "temporal-polyfill": "^0.3.2"
+    "temporal-polyfill": "^0.3.2",
+    "vitest": "^4.1.8"
   },
   "devDependencies": {
     "@faker-js/faker": "^10.4.0",
-    "@repo/typescript-config": "workspace:*",
     "@repo/numbers": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
     "@types/cors": "^2.8.19",
     "@types/express": "5.0.5",
     "@types/express-serve-static-core": "^5.1.1",
