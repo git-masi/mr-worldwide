@@ -1,5 +1,7 @@
-import "dotenv/config";
+import dotenv from "dotenv";
 import { initServer } from "./server";
+
+dotenv.config();
 
 const dsn = process.env.DATABASE_URL;
 if (!dsn) {
