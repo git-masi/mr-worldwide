@@ -36,7 +36,7 @@ describe("Rooms", () => {
     });
   });
 
-  test("do not vacate rooms", () => {
+  test("do not vacate room", () => {
     const rooms = new Rooms(1);
 
     rooms.occupy(Temporal.PlainDate.from("2026-01-02"));
@@ -46,5 +46,45 @@ describe("Rooms", () => {
     rooms.vacate(Temporal.PlainDate.from("2026-01-01"));
 
     expect(rooms.getNumAvailableRooms()).toEqual(0);
+  });
+
+  test("vacate room", () => {
+    const rooms = new Rooms(1);
+
+    rooms.occupy(Temporal.PlainDate.from("2026-01-01"));
+
+    expect(rooms.getNumAvailableRooms()).toEqual(0);
+
+    rooms.vacate(Temporal.PlainDate.from("2026-01-01"));
+
+    expect(rooms.getNumAvailableRooms()).toEqual(1);
+  });
+
+  test("vacate all rooms", () => {
+    const rooms = new Rooms(3);
+
+    rooms.occupy(Temporal.PlainDate.from("2026-01-01"));
+    rooms.occupy(Temporal.PlainDate.from("2026-01-02"));
+    rooms.occupy(Temporal.PlainDate.from("2026-01-03"));
+
+    expect(rooms.getNumAvailableRooms()).toEqual(0);
+
+    rooms.vacate(Temporal.PlainDate.from("2026-01-03"));
+
+    expect(rooms.getNumAvailableRooms()).toEqual(3);
+  });
+
+  test("vacate some rooms", () => {
+    const rooms = new Rooms(3);
+
+    rooms.occupy(Temporal.PlainDate.from("2026-01-01"));
+    rooms.occupy(Temporal.PlainDate.from("2026-01-02"));
+    rooms.occupy(Temporal.PlainDate.from("2026-01-03"));
+
+    expect(rooms.getNumAvailableRooms()).toEqual(0);
+
+    rooms.vacate(Temporal.PlainDate.from("2026-01-02"));
+
+    expect(rooms.getNumAvailableRooms()).toEqual(2);
   });
 });
