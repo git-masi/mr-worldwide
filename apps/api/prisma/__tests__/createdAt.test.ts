@@ -11,8 +11,6 @@ describe("getCreatedAtDate", () => {
 
     const dates = Array.from({ length: 1000 }).map(() => getDate(futureDate));
 
-    console.log(dates.map((d) => d.toString()));
-
     dates.forEach((date, i) => {
       // Every date must be before the future date
       expect(Temporal.PlainDate.compare(date, futureDate)).toEqual(-1);
