@@ -29,7 +29,7 @@ describe("createBookingData", () => {
     expect(bookingData[0]).toMatchObject({
       hotelId,
       customerId,
-      checkIn: now.toString(),
+      checkIn: new Date(now.toString()),
     });
   });
 
@@ -61,17 +61,17 @@ describe("createBookingData", () => {
       {
         hotelId,
         customerId,
-        checkIn: now.toString(),
+        checkIn: new Date(now.toString()),
       },
       {
         hotelId,
         customerId,
-        checkIn: now.add({ days: 1 }).toString(),
+        checkIn: new Date(now.add({ days: 1 }).toString()),
       },
       {
         hotelId,
         customerId,
-        checkIn: now.add({ days: 2 }).toString(),
+        checkIn: new Date(now.add({ days: 2 }).toString()),
       },
     ]);
   });
@@ -106,12 +106,12 @@ describe("createBookingData", () => {
       {
         hotelId,
         customerId,
-        checkIn: now.toString(),
+        checkIn: new Date(now.toString()),
       },
       {
         hotelId,
         customerId,
-        checkIn: now.add({ days: 2 }).toString(),
+        checkIn: new Date(now.add({ days: 2 }).toString()),
       },
     ]);
   });
@@ -155,12 +155,12 @@ describe("createBookingData", () => {
       {
         hotelId,
         customerId: customerId1,
-        checkIn: now.toString(),
+        checkIn: new Date(now.toString()),
       },
       {
         hotelId,
         customerId: customerId2,
-        checkIn: now.toString(),
+        checkIn: new Date(now.toString()),
       },
     ]);
   });
