@@ -39,6 +39,22 @@ BigInt.prototype.toJSON = function () {
   return this.toString();
 };
 
+const postgresUser = process.env.POSTGRES_USER;
+const postgresPassword = process.env.POSTGRES_PASSWORD;
+const postgresDb = process.env.POSTGRES_DB;
+
+if (!postgresUser || !postgresPassword || !postgresDb) {
+  throw new Error(`Missing one or more env vars`);
+}
+
+const client = new pg.Client({
+  host: "localhost",
+  port: 5432,
+  user: postgresUser,
+  password: postgresPassword,
+  database: postgresDb,
+});
+
 main()
   .catch((e) => {
     console.error("❌ Error seeding database:", e);
@@ -178,14 +194,6 @@ async function createBookings(
   // ================
   // Stream CSV to DB
   // ================
-
-  const client = new pg.Client({
-    host: "localhost",
-    port: 5432,
-    user: "postgres",
-    password: "postgres",
-    database: "mrww",
-  });
 
   await client.connect();
 
