@@ -1,5 +1,7 @@
 import { describe, test, expect } from "vitest";
 import { Rooms } from "../utils";
+import { range } from "@repo/numbers/range";
+import { Temporal } from "temporal-polyfill";
 
 describe("Rooms", () => {
   test("throw if total rooms < 1", () => {
@@ -11,9 +13,24 @@ describe("Rooms", () => {
   });
 
   test("return available rooms", () => {
-    const totalRooms = 10;
-    const rooms = new Rooms(totalRooms);
+    const testCases = [
+      { totalRooms: 10, occupy: 0, expected: 10 },
+      { totalRooms: 10, occupy: 1, expected: 9 },
+      { totalRooms: 10, occupy: 2, expected: 8 },
+      { totalRooms: 10, occupy: 3, expected: 7 },
+      { totalRooms: 10, occupy: 10, expected: 0 },
+      { totalRooms: 10, occupy: 11, expected: 0 },
+      { totalRooms: 10, occupy: 9999, expected: 0 },
+    ];
 
-    expect(rooms.getNumAvailableRooms()).toEqual(totalRooms);
+    testCases.forEach(({ totalRooms, occupy, expected }) => {
+      const rooms = new Rooms(totalRooms);
+
+      for (const _ of range(occupy)) {
+        rooms.occupy(Temporal.Now.plainDateISO());
+      }
+
+      expect(rooms.getNumAvailableRooms()).toEqual(expected);
+    });
   });
 });
