@@ -5,7 +5,7 @@
 
 
 
-These are private functions, they are only used to see the database.
+These are private functions, they are only used to seed the database.
 If you need to use these elsewhere for any reason it would be best to move them to a more
 appropriate location like in a @repo package.
 
@@ -298,5 +298,37 @@ export function getCreatedAtDate(start: Temporal.PlainDate) {
     updateCreatedAt(currentDate);
 
     return createdAt;
+  };
+}
+
+// Randomly select a customer **without replacement**.
+// This function mutates the input array.
+// With a large enough array of customers there is a greatly reduced chance of customers
+// booking at two different hotels on the same day.
+export function getRandomCustomer(customers: { id: bigint }[]) {
+  const size = customers.length - 1;
+  let end = size;
+
+  // The window of available customers is from 0 to `end`.
+  // When a customer is selected it is swapped to the `end` and `end` is decremented
+  // which decreases the size of the window.
+  // After all the customers have been selected at least once reset the window and
+  // start again.
+  return () => {
+    const idx = faker.number.int(end);
+
+    const customer = customers[idx]!;
+
+    // Swap elements
+    // @ts-ignore
+    [customers[idx], customers[end]] = [customers[end], customers[idx]];
+
+    end--;
+
+    if (end < 0) {
+      end = size;
+    }
+
+    return customer;
   };
 }

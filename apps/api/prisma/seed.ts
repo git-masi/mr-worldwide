@@ -19,6 +19,7 @@ import {
   getCreatedAtDate,
   getHotelName,
   getLengthOfStay,
+  getRandomCustomer,
 } from "./utils";
 
 const adapter = new PrismaPg({
@@ -30,7 +31,7 @@ const prisma = new PrismaClient({ adapter });
 const NUM_HOTELS = 500;
 const MIN_HOTEL_ROOMS = 10;
 const MAX_HOTEL_ROOMS = 100;
-const NUM_CUSTOMERS = 10_000;
+const NUM_CUSTOMERS = 20_000;
 
 // This allows `BigInt` values to be serialized using `JSON.stringify`.
 // There are alternative ways to achieve the same results, but this is the easiest for our use case.
@@ -143,7 +144,7 @@ async function createBookings(
   // Add a new booking 70% of the time
   const shouldAddBooking = () => faker.datatype.boolean({ probability: 0.7 });
   // Get a random customer
-  const getCustomer = () => faker.helpers.arrayElement(customers);
+  const getCustomer = getRandomCustomer(customers);
   const getCreatedAt = getCreatedAtDate(now.subtract({ days: 90 }));
 
   // =====================
