@@ -42,16 +42,10 @@ async function main() {
   console.log(`✅ Created hotels`);
 
   const customers = await createCustomers();
-  console.log(`✅ Created hotels`);
+  console.log(`✅ Created customers`);
 
-  let count = 0;
+  await createBookings(hotels, customers);
 
-  for (const hotel of hotels) {
-    await createBookings(hotel, customers);
-    // This could be achieved using a traditional for loop but this works too
-    count++;
-    console.log(`Created bookings for hotel ${count}/${hotels.length}`);
-  }
   console.log(`✅ Created bookings`);
 }
 
@@ -99,8 +93,8 @@ function createCustomers() {
   });
 }
 
-function createBookings(
-  hotel: { id: bigint; totalRooms: number },
+async function createBookings(
+  hotels: { id: bigint; totalRooms: number }[],
   customers: { id: bigint }[],
 ) {
   const now = Temporal.Now.plainDateISO();
@@ -109,16 +103,23 @@ function createBookings(
   const shouldAddBooking = () => faker.datatype.boolean({ probability: 0.7 });
   // Get a random customer
   const getCustomer = () => faker.helpers.arrayElement(customers);
+  const getCreatedAt = getCreatedAtDate(now);
 
-  const bookingData = createBookingData({
-    start: now,
-    end: oneYearFromNow,
-    hotel,
-    shouldAddBooking,
-    getLengthOfStay,
-    getCustomer,
-    getCreatedAt: getCreatedAtDate(now),
-  });
+  let bookingData: Prisma.BookingCreateManyInput[] = [];
 
-  return prisma.booking.createMany({ data: bookingData });
+  for (const hotel of hotels) {
+    bookingData.push(
+      ...createBookingData({
+        start: now,
+        end: oneYearFromNow,
+        hotel,
+        shouldAddBooking,
+        getLengthOfStay,
+        getCustomer,
+        getCreatedAt,
+      }),
+    );
+  }
+
+  await prisma.booking.createMany({ data: bookingData });
 }
