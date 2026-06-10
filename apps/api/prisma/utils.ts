@@ -5,7 +5,7 @@
 
 
 
-These should be considered private functions that are only used to see the database.
+These are private functions, they are only used to see the database.
 If you need to use these elsewhere for any reason it would be best to move them to a more
 appropriate location like in a @repo package.
 
