@@ -39,6 +39,7 @@ lerna-debug.log*
 # Misc
 .DS_Store
 *.pem
+temp/
 
 # Generated files
 generated/
