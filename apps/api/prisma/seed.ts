@@ -27,12 +27,10 @@ const adapter = new PrismaPg({
 
 const prisma = new PrismaClient({ adapter });
 
-// const NUM_HOTELS = 1000;
-const NUM_HOTELS = 10;
+const NUM_HOTELS = 500;
 const MIN_HOTEL_ROOMS = 10;
 const MAX_HOTEL_ROOMS = 100;
-// const NUM_CUSTOMERS = 10_000;
-const NUM_CUSTOMERS = 10;
+const NUM_CUSTOMERS = 10_000;
 
 // This allows `BigInt` values to be serialized using `JSON.stringify`.
 // There are alternative ways to achieve the same results, but this is the easiest for our use case.
