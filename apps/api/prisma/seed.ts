@@ -122,6 +122,7 @@ function createBookings(
   const oneYearFromNow = now.add({ years: 1 });
   let currentDate = now;
 
+  // Loop through each date from the current date to one year from now
   while (Temporal.PlainDate.compare(currentDate, oneYearFromNow) < 0) {
     // Free up rooms where the occupant is checking out on `currentDate`
     let root = rooms.root();
