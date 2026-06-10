@@ -4,7 +4,12 @@ import { faker } from "@faker-js/faker";
 import { Prisma } from "./generated/browser";
 import { Temporal } from "temporal-polyfill";
 import { range } from "@repo/numbers/range";
-import { createWriteStream, createReadStream } from "node:fs";
+import {
+  createWriteStream,
+  createReadStream,
+  existsSync,
+  mkdirSync,
+} from "node:fs";
 import { once } from "node:events";
 import pg from "pg";
 import { from as copyFrom } from "pg-copy-streams";
@@ -48,6 +53,13 @@ main()
 async function main() {
   console.log("🌱 Seeding database...");
 
+  const dir = "./temp";
+  const path = `${dir}/bookings.csv`;
+
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true });
+  }
+
   await prisma.booking.deleteMany();
   await prisma.hotel.deleteMany();
   await prisma.customer.deleteMany();
@@ -57,8 +69,6 @@ async function main() {
 
   const customers = await createCustomers();
   console.log(`✅ Created customers`);
-
-  const path = "./temp/bookings.csv";
 
   await createBookings(hotels, customers, path);
 
