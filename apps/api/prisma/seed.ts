@@ -122,9 +122,9 @@ async function createBookings(
   const getCustomer = () => faker.helpers.arrayElement(customers);
   const getCreatedAt = getCreatedAtDate(now.subtract({ days: 90 }));
 
-  // ===================
-  // Write CSV with data
-  // ===================
+  // =====================
+  // Write bookings to CSV
+  // =====================
 
   const output = createWriteStream(path);
 
@@ -153,11 +153,9 @@ async function createBookings(
       );
     });
 
-    console.log(`Created bookings for hotel ${hotel.id}`);
-
     if (bookingData.length > 10_000) {
       console.log(`Flushing bookings to disk`);
-      await write(bookingData.join("\n" + "\n"));
+      await write(bookingData.join("\n") + "\n");
       // Reset the array so it can be reused
       bookingData.length = 0;
     }
@@ -166,6 +164,8 @@ async function createBookings(
   output.end();
 
   await once(output, "finish");
+
+  console.log("Finished writing bookings to CSV");
 
   // ================
   // Stream CSV to DB

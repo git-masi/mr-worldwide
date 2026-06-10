@@ -132,13 +132,13 @@ export function createBookingData(config: {
         customerId: customer.id,
         createdAt: new Date(
           createdAt.toZonedDateTime("UTC").toInstant().epochMilliseconds,
-        ),
+        ).toISOString(),
         checkIn: new Date(
           currentDate.toZonedDateTime("UTC").toInstant().epochMilliseconds,
-        ),
+        ).toISOString(),
         checkOut: new Date(
           checkOut.toZonedDateTime("UTC").toInstant().epochMilliseconds,
-        ),
+        ).toISOString(),
       });
 
       // Mark room as taken
