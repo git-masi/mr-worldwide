@@ -31,9 +31,11 @@ const prisma = new PrismaClient({ adapter });
 const NUM_HOTELS = 500;
 const MIN_HOTEL_ROOMS = 10;
 const MAX_HOTEL_ROOMS = 100;
+const OCCUPANCY_RATE = 0.7;
 // Calculate the number of customers based on hotel rooms so that we reduce the likelihood
 // of customers booking overlapping dates at different hotels.
-const NUM_CUSTOMERS = NUM_HOTELS * ((MAX_HOTEL_ROOMS - MIN_HOTEL_ROOMS) / 2);
+const NUM_CUSTOMERS =
+  NUM_HOTELS * ((MAX_HOTEL_ROOMS - MIN_HOTEL_ROOMS) * OCCUPANCY_RATE);
 const BOOKINGS_BUFFER = 50_000;
 
 // This allows `BigInt` values to be serialized using `JSON.stringify`.
@@ -145,7 +147,8 @@ async function createBookings(
   const now = Temporal.Now.plainDateISO();
   const oneYearFromNow = now.add({ years: 1 });
   // Add a new booking 70% of the time for all hotels.
-  const shouldAddBooking = () => faker.datatype.boolean({ probability: 0.7 });
+  const shouldAddBooking = () =>
+    faker.datatype.boolean({ probability: OCCUPANCY_RATE });
   // Use the same random customer function across all hotels.
   const getCustomer = getRandomCustomer(customers);
 
