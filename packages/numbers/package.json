@@ -1,0 +1,20 @@
+{
+  "name": "@repo/numbers",
+  "type": "module",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "tsc --watch",
+    "build": "tsc"
+  },
+  "exports": {
+    ".": "./src/*.ts",
+    "./range": {
+      "types": "./src/range.ts",
+      "default": "./dist/range.js"
+    }
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "typescript": "^6.0.3"
+  }
+}

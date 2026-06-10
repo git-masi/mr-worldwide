@@ -5,6 +5,7 @@ import { Prisma } from "./generated/browser";
 import { MinHeap } from "@datastructures-js/heap";
 import { Temporal } from "temporal-polyfill";
 import { BookingCreateManyInput } from "./generated/models";
+import { range } from "@repo/numbers/range";
 
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL!,
@@ -172,13 +173,6 @@ function createBookings(
 // =====
 // utils
 // =====
-
-/* Create an iterator that can be used to range from 0 to n - 1 */
-function* range(n: number) {
-  for (let i = 0; i < n; i++) {
-    yield i;
-  }
-}
 
 const hotelNames = [
   "Autograph Collection Hotels",
