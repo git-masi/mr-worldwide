@@ -78,12 +78,15 @@ const weightedLengthOfStay = [
   { weight: 5, value: 7 },
 ];
 
-export function createBookingData(
-  start: Temporal.PlainDate,
-  end: Temporal.PlainDate,
-  hotel: { id: bigint; totalRooms: number },
-  customers: { id: bigint }[],
-) {
+export function createBookingData(config: {
+  start: Temporal.PlainDate;
+  end: Temporal.PlainDate;
+  hotel: { id: bigint; totalRooms: number };
+  customers: { id: bigint }[];
+  shouldAddBooking: () => boolean;
+}) {
+  const { start, end, hotel, customers, shouldAddBooking } = config;
+
   const bookingData: BookingCreateManyInput[] = [];
 
   const rooms = new Rooms(hotel.totalRooms);
@@ -96,9 +99,7 @@ export function createBookingData(
     rooms.vacate(currentDate);
 
     for (const _ of range(rooms.getNumAvailableRooms())) {
-      // We will add a new booking 70% of the time
-      const addBooking = faker.datatype.boolean({ probability: 0.7 });
-      if (!addBooking) {
+      if (!shouldAddBooking()) {
         continue;
       }
 

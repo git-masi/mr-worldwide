@@ -100,7 +100,16 @@ function createBookings(
 ) {
   const now = Temporal.Now.plainDateISO();
   const oneYearFromNow = now.add({ years: 1 });
-  const bookingData = createBookingData(now, oneYearFromNow, hotel, customers);
+  // Add a new booking 70% of the time
+  const shouldAddBooking = () => faker.datatype.boolean({ probability: 0.7 });
+
+  const bookingData = createBookingData({
+    start: now,
+    end: oneYearFromNow,
+    hotel,
+    customers,
+    shouldAddBooking,
+  });
 
   return prisma.booking.createMany({ data: bookingData });
 }
