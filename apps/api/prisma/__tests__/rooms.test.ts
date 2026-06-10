@@ -23,14 +23,28 @@ describe("Rooms", () => {
       { totalRooms: 10, occupy: 9999, expected: 0 },
     ];
 
+    const now = Temporal.Now.plainDateISO();
+
     testCases.forEach(({ totalRooms, occupy, expected }) => {
       const rooms = new Rooms(totalRooms);
 
       for (const _ of range(occupy)) {
-        rooms.occupy(Temporal.Now.plainDateISO());
+        rooms.occupy(now);
       }
 
       expect(rooms.getNumAvailableRooms()).toEqual(expected);
     });
+  });
+
+  test("do not vacate rooms", () => {
+    const rooms = new Rooms(1);
+
+    rooms.occupy(Temporal.PlainDate.from("2026-01-02"));
+
+    expect(rooms.getNumAvailableRooms()).toEqual(0);
+
+    rooms.vacate(Temporal.PlainDate.from("2026-01-01"));
+
+    expect(rooms.getNumAvailableRooms()).toEqual(0);
   });
 });

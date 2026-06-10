@@ -52,7 +52,10 @@ export class Rooms {
     let root = this.heap.root();
     while (
       root !== null &&
-      currentDate.equals(Temporal.PlainDate.from(root.checkOut))
+      Temporal.PlainDate.compare(
+        currentDate,
+        Temporal.PlainDate.from(root.checkOut),
+      ) >= 0
     ) {
       this.heap.pop();
       root = this.heap.root();
