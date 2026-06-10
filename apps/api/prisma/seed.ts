@@ -4,7 +4,12 @@ import { faker } from "@faker-js/faker";
 import { Prisma } from "./generated/browser";
 import { Temporal } from "temporal-polyfill";
 import { range } from "@repo/numbers/range";
-import { createBookingData, getHotelName, getLengthOfStay } from "./utils";
+import {
+  createBookingData,
+  getCreatedAtDate,
+  getHotelName,
+  getLengthOfStay,
+} from "./utils";
 
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL!,
@@ -112,6 +117,7 @@ function createBookings(
     shouldAddBooking,
     getLengthOfStay,
     getCustomer,
+    getCreatedAt: getCreatedAtDate(now),
   });
 
   return prisma.booking.createMany({ data: bookingData });

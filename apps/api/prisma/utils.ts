@@ -90,9 +90,17 @@ export function createBookingData(config: {
   shouldAddBooking: () => boolean;
   getLengthOfStay: () => number;
   getCustomer: () => { id: bigint };
+  getCreatedAt: (currentDate: Temporal.PlainDate) => Temporal.PlainDate;
 }) {
-  const { start, end, hotel, shouldAddBooking, getLengthOfStay, getCustomer } =
-    config;
+  const {
+    start,
+    end,
+    hotel,
+    shouldAddBooking,
+    getLengthOfStay,
+    getCustomer,
+    getCreatedAt,
+  } = config;
 
   const bookingData: BookingCreateManyInput[] = [];
 
@@ -113,11 +121,7 @@ export function createBookingData(config: {
       // Get a random customer
       const customer = getCustomer();
 
-      // Set the created at date for the booking to be some time in the past 90 days
-      const createdAt = faker.date.recent({
-        days: 90,
-        refDate: currentDate.toString(),
-      });
+      const createdAt = getCreatedAt(currentDate);
 
       // Add the number of nights to the current date to get the check out date
       const checkOut = currentDate.add({ days: getLengthOfStay() });
@@ -126,7 +130,7 @@ export function createBookingData(config: {
       bookingData.push({
         hotelId: hotel.id,
         customerId: customer.id,
-        createdAt,
+        createdAt: createdAt.toString(),
         checkIn: currentDate.toString(),
         checkOut: checkOut.toString(),
       });
