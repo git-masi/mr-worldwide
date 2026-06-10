@@ -252,3 +252,47 @@ export function getHotelName(): string {
 
   return `${name} ${location}`;
 }
+
+// The purpose of this function is to create a series of dates that are monotonically increasing
+// unlike the `faker.date.recent`.
+export function getCreatedAtDate(start: Temporal.PlainDate) {
+  let createdAt: Temporal.PlainDate = start;
+
+  const updateCreatedAt = (currentDate: Temporal.PlainDate) => {
+    const { days: numDaysSincePrev } = currentDate.since(createdAt);
+
+    // If it has been less than 10 days since the current date then we reuse the same created at date
+    if (numDaysSincePrev < 10) {
+      return;
+    }
+
+    // If it has been more than 90 days since the current date date then we increment created at by
+    // some number of days between 1 and 10
+    if (numDaysSincePrev > 90) {
+      createdAt = createdAt.add({
+        days: faker.number.int({ min: 1, max: 10 }),
+      });
+      return;
+    }
+
+    // As the created at date gets closer to the current date the probability of incrementing
+    // the date decreases
+    const shouldIncrement = faker.datatype.boolean({
+      probability: Math.min(numDaysSincePrev / 100, 0.3),
+    });
+
+    if (!shouldIncrement) {
+      return;
+    }
+
+    createdAt = createdAt.add({
+      days: 1,
+    });
+  };
+
+  return (currentDate: Temporal.PlainDate): Temporal.PlainDate => {
+    updateCreatedAt(currentDate);
+
+    return createdAt;
+  };
+}
