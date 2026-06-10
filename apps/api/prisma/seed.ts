@@ -34,8 +34,7 @@ const MAX_HOTEL_ROOMS = 100;
 const OCCUPANCY_RATE = 0.7;
 // Calculate the number of customers based on hotel rooms so that we reduce the likelihood
 // of customers booking overlapping dates at different hotels.
-const NUM_CUSTOMERS =
-  NUM_HOTELS * ((MAX_HOTEL_ROOMS - MIN_HOTEL_ROOMS) * OCCUPANCY_RATE);
+const NUM_CUSTOMERS = NUM_HOTELS * MAX_HOTEL_ROOMS * OCCUPANCY_RATE;
 const BOOKINGS_BUFFER = 50_000;
 
 // This allows `BigInt` values to be serialized using `JSON.stringify`.
