@@ -20,6 +20,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@datastructures-js/heap':
+        specifier: github:datastructures-js/heap
+        version: https://codeload.github.com/datastructures-js/heap/tar.gz/487286ea1e9bef74af37358bfaf75f3a73081d2f
       '@prisma/adapter-pg':
         specifier: 7.8.0
         version: 7.8.0
@@ -344,6 +347,10 @@ packages:
   '@babel/types@7.29.7':
     resolution: {integrity: sha512-4zBIxpPzowiZpusoFkyGVwakdRJUyuH5PxQ/PrqghfdFWWasvnCdPfQXHrenDai+gyLARulZjZowCOj6fjT4pA==}
     engines: {node: '>=6.9.0'}
+
+  '@datastructures-js/heap@https://codeload.github.com/datastructures-js/heap/tar.gz/487286ea1e9bef74af37358bfaf75f3a73081d2f':
+    resolution: {tarball: https://codeload.github.com/datastructures-js/heap/tar.gz/487286ea1e9bef74af37358bfaf75f3a73081d2f}
+    version: 4.3.7
 
   '@dotenvx/dotenvx@1.71.2':
     resolution: {integrity: sha512-Xj9T3Wr+Bo4ILKf9PZJBYJ4SJiZGC/pqIdzOMbX9jgAFb0oGuKkusLleYHN/N6zanZixNvmuMVWYR1T3YJuVTA==}
@@ -4413,6 +4420,8 @@ snapshots:
     dependencies:
       '@babel/helper-string-parser': 7.29.7
       '@babel/helper-validator-identifier': 7.29.7
+
+  '@datastructures-js/heap@https://codeload.github.com/datastructures-js/heap/tar.gz/487286ea1e9bef74af37358bfaf75f3a73081d2f': {}
 
   '@dotenvx/dotenvx@1.71.2':
     dependencies:

@@ -2,6 +2,9 @@ import { PrismaClient } from "./generated/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { faker } from "@faker-js/faker";
 import { Prisma } from "./generated/browser";
+import { MinHeap } from "@datastructures-js/heap";
+import { Temporal } from "temporal-polyfill";
+import { BookingCreateManyInput } from "./generated/models";
 
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL!,
@@ -36,7 +39,16 @@ async function main() {
   const customers = await createCustomers();
   console.log(`✅ Created hotels`);
 
-  await createBookings();
+  const now = Temporal.Now.plainDateISO();
+  let count = 0;
+
+  for (const hotel of hotels) {
+    await createBookings(now, hotel, customers);
+    // This could be achieved using a traditional for loop but this works too
+    count++;
+    console.log(`Created bookings for hotel ${count}/${hotels.length}`);
+  }
+  console.log(`✅ Created bookings`);
 }
 
 function createHotels() {
@@ -60,13 +72,13 @@ function createHotels() {
 }
 
 function createCustomers() {
-  const users: Prisma.CustomerCreateManyInput[] = [];
+  const customerData: Prisma.CustomerCreateManyInput[] = [];
 
   for (const _ of range(NUM_CUSTOMERS)) {
     const firstName = faker.person.firstName();
     const lastName = faker.person.lastName();
 
-    users.push({
+    customerData.push({
       firstName,
       lastName,
       // If this does not provide enough randomness add another random number to the end of the last name.
@@ -78,50 +90,93 @@ function createCustomers() {
   }
 
   return prisma.customer.createManyAndReturn({
-    data: users,
+    data: customerData,
     select: { id: true },
   });
 }
 
-async function createBookings(
-  startDate: Date,
-  endDate: Date,
+const weightedLengthOfStay = [
+  // To make this easier to reason about the weights add up to 100 so that
+  // each weight has an x/100 chance of being selected.
+  { weight: 10, value: 1 },
+  { weight: 15, value: 2 },
+  { weight: 25, value: 3 },
+  { weight: 20, value: 4 },
+  { weight: 20, value: 5 },
+  { weight: 5, value: 6 },
+  { weight: 5, value: 7 },
+];
+
+function createBookings(
+  now: Temporal.PlainDate,
   hotel: { id: bigint; totalRooms: number },
   customers: { id: bigint }[],
 ) {
-  return Promise.resolve();
+  const bookingData: BookingCreateManyInput[] = [];
+
+  const rooms = new MinHeap<{ checkOut: string }>(
+    (booking) => booking.checkOut,
+  );
+
+  const oneYearFromNow = now.add({ years: 1 });
+  let currentDate = now;
+
+  while (Temporal.PlainDate.compare(currentDate, oneYearFromNow) < 0) {
+    // Free up rooms where the occupant is checking out on `currentDate`
+    let root = rooms.root();
+    while (
+      root !== null &&
+      Temporal.PlainDate.compare(
+        currentDate,
+        Temporal.PlainDate.from(root.checkOut),
+      ) >= 0
+    ) {
+      rooms.pop();
+      root = rooms.root();
+    }
+
+    for (const _ of range(hotel.totalRooms - rooms.size())) {
+      // We will add a new booking 70% of the time
+      const addBooking = faker.datatype.boolean({ probability: 0.7 });
+      if (!addBooking) {
+        continue;
+      }
+
+      const numNights =
+        faker.helpers.weightedArrayElement(weightedLengthOfStay);
+
+      const customer = faker.helpers.arrayElement(customers);
+
+      // Add booking data to save to DB
+      bookingData.push({
+        hotelId: hotel.id,
+        customerId: customer.id,
+        createdAt: faker.date.recent({
+          days: 90,
+          refDate: currentDate.toString(),
+        }), // take the current date and select a date up to 3 months in the past
+        checkIn: currentDate.toString(), // current date
+        checkOut: currentDate.add({ days: numNights }).toString(), // add days equal to numNights to the current date
+      });
+
+      // Mark room as taken
+      rooms.push({ checkOut: currentDate.add({ days: numNights }).toString() });
+    }
+
+    currentDate = currentDate.add({ days: 1 });
+  }
+
+  return prisma.booking.createMany({ data: bookingData });
 }
 
 // =====
 // utils
 // =====
 
-// Randomize (mutate) the order of elements in an array
-export function randomize<T>(arr: T[]) {
-  const len = arr.length;
-  let end = len - 1;
-
-  // We only need to loop len - 1 times because the final element would just swap with itself
-  for (const _ of range(len - 1)) {
-    const idx = faker.number.int({ min: 0, max: end });
-
-    // @ts-ignore
-    [arr[idx], arr[end]] = [arr[end], arr[idx]];
-
-    end--;
-  }
-}
-
 /* Create an iterator that can be used to range from 0 to n - 1 */
 function* range(n: number) {
   for (let i = 0; i < n; i++) {
     yield i;
-  }
-}
-
-function* batch<T>(arr: T[], size: number) {
-  for (let i = 0; i < arr.length; i += size) {
-    yield arr.slice(i, i + size);
   }
 }
 
