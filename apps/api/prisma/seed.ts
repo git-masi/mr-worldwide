@@ -286,13 +286,8 @@ const hotelLocationFns = [
 ];
 
 function getHotelName(): string {
-  const name =
-    hotelNames[faker.number.int({ min: 0, max: hotelNames.length - 1 })]!;
-
-  const location =
-    hotelLocationFns[
-      faker.number.int({ min: 0, max: hotelLocationFns.length - 1 })
-    ]!;
+  const name = faker.helpers.arrayElement(hotelNames);
+  const location = faker.helpers.arrayElement(hotelLocationFns)();
 
   return `${name} ${location}`;
 }
