@@ -271,18 +271,17 @@ export function getCreatedAtDate(start: Temporal.PlainDate) {
     }
 
     // If it has been more than 90 days since the current date date then we increment created at by
-    // some number of days between 1 and 10
+    // some number of days between 1 and 5
     if (numDaysSincePrev > 90) {
       createdAt = createdAt.add({
-        days: faker.number.int({ min: 1, max: 10 }),
+        days: faker.number.int({ min: 1, max: 5 }),
       });
       return;
     }
 
-    // As the created at date gets closer to the current date the probability of incrementing
-    // the date decreases
+    // Increment the created at date 1% of the time.
     const shouldIncrement = faker.datatype.boolean({
-      probability: Math.min(numDaysSincePrev / 100, 0.3),
+      probability: 0.01,
     });
 
     if (!shouldIncrement) {

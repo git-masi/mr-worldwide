@@ -144,11 +144,10 @@ async function createBookings(
 ) {
   const now = Temporal.Now.plainDateISO();
   const oneYearFromNow = now.add({ years: 1 });
-  // Add a new booking 70% of the time
+  // Add a new booking 70% of the time for all hotels.
   const shouldAddBooking = () => faker.datatype.boolean({ probability: 0.7 });
-  // Get a random customer
+  // Use the same random customer function across all hotels.
   const getCustomer = getRandomCustomer(customers);
-  const getCreatedAt = getCreatedAtDate(now.subtract({ days: 90 }));
 
   // =====================
   // Write bookings to CSV
@@ -165,8 +164,12 @@ async function createBookings(
   await write("hotel_id,customer_id,created_at,check_in,check_out\n");
 
   let bookingData: string[] = [];
+  let count = 0;
 
   for (const hotel of hotels) {
+    // Start over from 90 days in the past after each hotel
+    const getCreatedAt = getCreatedAtDate(now.subtract({ days: 90 }));
+
     createBookingData({
       start: now,
       end: oneYearFromNow,
@@ -182,7 +185,8 @@ async function createBookings(
     });
 
     if (bookingData.length > BOOKINGS_BUFFER) {
-      console.log(`Flushing bookings to disk`);
+      count++;
+      console.log(`Flushing bookings to disk | ${count}`);
       await write(bookingData.join("\n") + "\n");
       // Reset the array so it can be reused
       bookingData.length = 0;
