@@ -22,18 +22,6 @@ import { range } from "@repo/numbers/range";
 import { Temporal } from "temporal-polyfill"; // Technically not needed for node v26
 import { BookingCreateManyInput } from "./generated/models";
 
-const weightedLengthOfStay = [
-  // To make this easier to reason about the weights add up to 100 so that
-  // each weight has an x/100 chance of being selected.
-  { weight: 10, value: 1 },
-  { weight: 15, value: 2 },
-  { weight: 25, value: 3 },
-  { weight: 20, value: 4 },
-  { weight: 20, value: 5 },
-  { weight: 5, value: 6 },
-  { weight: 5, value: 7 },
-];
-
 type Checkout = { checkOut: string };
 
 export class Rooms {
@@ -78,6 +66,18 @@ export class Rooms {
   }
 }
 
+const weightedLengthOfStay = [
+  // To make this easier to reason about the weights add up to 100 so that
+  // each weight has an x/100 chance of being selected.
+  { weight: 10, value: 1 },
+  { weight: 15, value: 2 },
+  { weight: 25, value: 3 },
+  { weight: 20, value: 4 },
+  { weight: 20, value: 5 },
+  { weight: 5, value: 6 },
+  { weight: 5, value: 7 },
+];
+
 export function createBookingData(
   start: Temporal.PlainDate,
   end: Temporal.PlainDate,
@@ -86,50 +86,49 @@ export function createBookingData(
 ) {
   const bookingData: BookingCreateManyInput[] = [];
 
-  const rooms = new MinHeap<{ checkOut: string }>(
-    (booking) => booking.checkOut,
-  );
+  const rooms = new Rooms(hotel.totalRooms);
 
   let currentDate = start;
 
   // Loop through each date from the current date to one year from now
-  while (Temporal.PlainDate.compare(currentDate, end) < 0) {
+  while (Temporal.PlainDate.compare(currentDate, end) <= 0) {
     // Free up rooms where the occupant is checking out on `currentDate`
-    let root = rooms.root();
-    while (
-      root !== null &&
-      currentDate.equals(Temporal.PlainDate.from(root.checkOut))
-    ) {
-      rooms.pop();
-      root = rooms.root();
-    }
+    rooms.vacate(currentDate);
 
-    for (const _ of range(hotel.totalRooms - rooms.size())) {
+    for (const _ of range(rooms.getNumAvailableRooms())) {
       // We will add a new booking 70% of the time
       const addBooking = faker.datatype.boolean({ probability: 0.7 });
       if (!addBooking) {
         continue;
       }
 
+      // Get a random customer
+      const customer = faker.helpers.arrayElement(customers);
+
+      // Get a random weighted number of nights for the stay
       const numNights =
         faker.helpers.weightedArrayElement(weightedLengthOfStay);
 
-      const customer = faker.helpers.arrayElement(customers);
+      // Set the created at date for the booking to be some time in the past 90 days
+      const createdAt = faker.date.recent({
+        days: 90,
+        refDate: currentDate.toString(),
+      });
+
+      // Add the number of nights to the current date to get the check out date
+      const checkOut = currentDate.add({ days: numNights });
 
       // Add booking data to save to DB
       bookingData.push({
         hotelId: hotel.id,
         customerId: customer.id,
-        createdAt: faker.date.recent({
-          days: 90,
-          refDate: currentDate.toString(),
-        }), // take the current date and select a date up to 3 months in the past
-        checkIn: currentDate.toString(), // current date
-        checkOut: currentDate.add({ days: numNights }).toString(), // add days equal to numNights to the current date
+        createdAt,
+        checkIn: currentDate.toString(),
+        checkOut: checkOut.toString(),
       });
 
       // Mark room as taken
-      rooms.push({ checkOut: currentDate.add({ days: numNights }).toString() });
+      rooms.occupy(checkOut);
     }
 
     currentDate = currentDate.add({ days: 1 });
