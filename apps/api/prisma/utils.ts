@@ -21,7 +21,6 @@ import { faker } from "@faker-js/faker";
 import { range } from "@repo/numbers/range";
 import { Temporal } from "temporal-polyfill"; // Technically not needed for node v26
 import { BookingCreateManyInput } from "./generated/models";
-import { Prisma } from "./generated/client";
 
 type Checkout = { checkOut: string };
 
