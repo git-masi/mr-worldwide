@@ -78,14 +78,21 @@ const weightedLengthOfStay = [
   { weight: 5, value: 7 },
 ];
 
+export function getLengthOfStay(): number {
+  // Get a random weighted number of nights for the stay
+  return faker.helpers.weightedArrayElement(weightedLengthOfStay);
+}
+
 export function createBookingData(config: {
   start: Temporal.PlainDate;
   end: Temporal.PlainDate;
   hotel: { id: bigint; totalRooms: number };
   customers: { id: bigint }[];
   shouldAddBooking: () => boolean;
+  getLengthOfStay: () => number;
 }) {
-  const { start, end, hotel, customers, shouldAddBooking } = config;
+  const { start, end, hotel, customers, shouldAddBooking, getLengthOfStay } =
+    config;
 
   const bookingData: BookingCreateManyInput[] = [];
 
@@ -106,10 +113,6 @@ export function createBookingData(config: {
       // Get a random customer
       const customer = faker.helpers.arrayElement(customers);
 
-      // Get a random weighted number of nights for the stay
-      const numNights =
-        faker.helpers.weightedArrayElement(weightedLengthOfStay);
-
       // Set the created at date for the booking to be some time in the past 90 days
       const createdAt = faker.date.recent({
         days: 90,
@@ -117,7 +120,7 @@ export function createBookingData(config: {
       });
 
       // Add the number of nights to the current date to get the check out date
-      const checkOut = currentDate.add({ days: numNights });
+      const checkOut = currentDate.add({ days: getLengthOfStay() });
 
       // Add booking data to save to DB
       bookingData.push({

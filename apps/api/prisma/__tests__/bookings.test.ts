@@ -8,6 +8,7 @@ describe("createBookingData", () => {
     const hotelId = BigInt(1);
     const customerId = BigInt(1);
     const shouldAddBooking = () => true;
+    const getLengthOfStay = () => 1;
 
     const bookingData = createBookingData({
       start: now,
@@ -15,6 +16,7 @@ describe("createBookingData", () => {
       hotel: { id: hotelId, totalRooms: 1 },
       customers: [{ id: customerId }],
       shouldAddBooking,
+      getLengthOfStay,
     });
 
     expect(bookingData).toHaveLength(1);
@@ -24,5 +26,43 @@ describe("createBookingData", () => {
       customerId,
       checkIn: now.toString(),
     });
+  });
+
+  test("create multiple bookings", () => {
+    const now = Temporal.Now.plainDateISO();
+    const end = now.add({ days: 2 });
+    const hotelId = BigInt(1);
+    const customerId = BigInt(1);
+    const shouldAddBooking = () => true;
+    const getLengthOfStay = () => 1;
+
+    const bookingData = createBookingData({
+      start: now,
+      end,
+      hotel: { id: hotelId, totalRooms: 1 },
+      customers: [{ id: customerId }],
+      shouldAddBooking,
+      getLengthOfStay,
+    });
+
+    expect(bookingData).toHaveLength(3);
+
+    expect(bookingData).toMatchObject([
+      {
+        hotelId,
+        customerId,
+        checkIn: now.toString(),
+      },
+      {
+        hotelId,
+        customerId,
+        checkIn: now.add({ days: 1 }).toString(),
+      },
+      {
+        hotelId,
+        customerId,
+        checkIn: now.add({ days: 2 }).toString(),
+      },
+    ]);
   });
 });
