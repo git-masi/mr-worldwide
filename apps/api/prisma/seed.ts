@@ -31,7 +31,10 @@ const prisma = new PrismaClient({ adapter });
 const NUM_HOTELS = 500;
 const MIN_HOTEL_ROOMS = 10;
 const MAX_HOTEL_ROOMS = 100;
-const NUM_CUSTOMERS = 20_000;
+// Calculate the number of customers based on hotel rooms so that we reduce the likelihood
+// of customers booking overlapping dates at different hotels.
+const NUM_CUSTOMERS = NUM_HOTELS * ((MAX_HOTEL_ROOMS - MIN_HOTEL_ROOMS) / 2);
+const BOOKINGS_BUFFER = 50_000;
 
 // This allows `BigInt` values to be serialized using `JSON.stringify`.
 // There are alternative ways to achieve the same results, but this is the easiest for our use case.
@@ -178,7 +181,7 @@ async function createBookings(
       );
     });
 
-    if (bookingData.length > 10_000) {
+    if (bookingData.length > BOOKINGS_BUFFER) {
       console.log(`Flushing bookings to disk`);
       await write(bookingData.join("\n") + "\n");
       // Reset the array so it can be reused
