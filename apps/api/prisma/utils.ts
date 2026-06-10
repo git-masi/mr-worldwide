@@ -130,15 +130,9 @@ export function createBookingData(config: {
       bookingData.push({
         hotelId: hotel.id,
         customerId: customer.id,
-        createdAt: new Date(
-          createdAt.toZonedDateTime("UTC").toInstant().epochMilliseconds,
-        ).toISOString(),
-        checkIn: new Date(
-          currentDate.toZonedDateTime("UTC").toInstant().epochMilliseconds,
-        ).toISOString(),
-        checkOut: new Date(
-          checkOut.toZonedDateTime("UTC").toInstant().epochMilliseconds,
-        ).toISOString(),
+        createdAt: createdAt.toPlainDateTime().toString(),
+        checkIn: currentDate.toPlainDateTime().toString(),
+        checkOut: checkOut.toPlainDateTime().toString(),
       });
 
       // Mark room as taken

@@ -48,8 +48,8 @@ main()
 async function main() {
   console.log("🌱 Seeding database...");
 
-  await prisma.hotel.deleteMany();
   await prisma.booking.deleteMany();
+  await prisma.hotel.deleteMany();
   await prisma.customer.deleteMany();
 
   const hotels = await createHotels();
