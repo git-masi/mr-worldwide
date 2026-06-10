@@ -1,197 +1,243 @@
-// import { PrismaClient } from "./generated/client";
-// import type { Item, Order, Prisma, User } from "./generated/client";
+import { PrismaClient } from "./generated/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { faker } from "@faker-js/faker";
+import { Prisma } from "./generated/browser";
 
-// import { PrismaPg } from "@prisma/adapter-pg";
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL!,
+});
 
-// import { faker } from "@faker-js/faker";
+const prisma = new PrismaClient({ adapter });
 
-// const adapter = new PrismaPg({
-//   connectionString: process.env.DATABASE_URL!,
-// });
+const NUM_HOTELS = 1000;
+const MIN_HOTEL_ROOMS = 10;
+const MAX_HOTEL_ROOMS = 100;
+const NUM_CUSTOMERS = 10_000;
 
-// const prisma = new PrismaClient({ adapter });
+main()
+  .catch((e) => {
+    console.error("❌ Error seeding database:", e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
 
-// const NUM_USERS = 10000;
-// const NUM_ITEMS = 1000;
-// const MAX_ORDER_ITEMS = 25;
-// const MAX_USER_ORDERS = 10;
+async function main() {
+  console.log("🌱 Seeding database...");
 
-// main()
-//   .catch((e) => {
-//     console.error("❌ Error seeding database:", e);
-//     process.exit(1);
-//   })
-//   .finally(async () => {
-//     await prisma.$disconnect();
-//   });
+  await prisma.hotel.deleteMany();
+  await prisma.booking.deleteMany();
+  await prisma.customer.deleteMany();
 
-// async function main() {
-//   console.log("🌱 Seeding database...");
+  const hotels = await createHotels();
+  console.log(`✅ Created hotels`);
 
-//   // Delete existing rows
-//   await prisma.orderItem.deleteMany();
-//   await prisma.item.deleteMany();
-//   await prisma.order.deleteMany();
-//   await prisma.user.deleteMany();
+  const customers = await createCustomers();
+  console.log(`✅ Created hotels`);
 
-//   await createUsers();
-//   console.log(`✅ Created users`);
+  await createBookings();
+}
 
-//   await createItems();
-//   console.log(`✅ Created items`);
+function createHotels() {
+  const hotelData: Prisma.HotelCreateManyInput[] = [];
 
-//   const users = await prisma.user.findMany();
+  for (const _ of range(NUM_HOTELS)) {
+    hotelData.push({
+      name: getHotelName(),
+      totalRooms: faker.number.int({
+        min: MIN_HOTEL_ROOMS,
+        max: MAX_HOTEL_ROOMS,
+        multipleOf: 5,
+      }),
+    });
+  }
 
-//   for (const b of batch(users, 100)) {
-//     const orderData: Prisma.OrderCreateManyInput[] = [];
+  return prisma.hotel.createManyAndReturn({
+    data: hotelData,
+    select: { id: true, totalRooms: true },
+  });
+}
 
-//     for (const user of b) {
-//       orderData.push(...createOrdersData(user));
-//     }
+function createCustomers() {
+  const users: Prisma.CustomerCreateManyInput[] = [];
 
-//     await prisma.order.createMany({
-//       data: orderData,
-//     });
-//   }
+  for (const _ of range(NUM_CUSTOMERS)) {
+    const firstName = faker.person.firstName();
+    const lastName = faker.person.lastName();
 
-//   console.log(`✅ Created orders`);
+    users.push({
+      firstName,
+      lastName,
+      // If this does not provide enough randomness add another random number to the end of the last name.
+      email: faker.internet.email({
+        firstName,
+        lastName,
+      }),
+    });
+  }
 
-//   const items = await prisma.item.findMany();
-//   const next = nextRandom(items);
+  return prisma.customer.createManyAndReturn({
+    data: users,
+    select: { id: true },
+  });
+}
 
-//   const orders = await prisma.order.findMany();
+async function createBookings(
+  startDate: Date,
+  endDate: Date,
+  hotel: { id: bigint; totalRooms: number },
+  customers: { id: bigint }[],
+) {
+  return Promise.resolve();
+}
 
-//   for (const b of batch(orders, 1000)) {
-//     const orderItemsData: Prisma.OrderItemCreateManyInput[] = [];
+// =====
+// utils
+// =====
 
-//     for (const order of b) {
-//       orderItemsData.push(...createOrderItemsData(order, next));
-//     }
+// Randomize (mutate) the order of elements in an array
+export function randomize<T>(arr: T[]) {
+  const len = arr.length;
+  let end = len - 1;
 
-//     await prisma.orderItem.createMany({
-//       data: orderItemsData,
-//     });
-//   }
+  // We only need to loop len - 1 times because the final element would just swap with itself
+  for (const _ of range(len - 1)) {
+    const idx = faker.number.int({ min: 0, max: end });
 
-//   console.log(`✅ Created order items`);
-// }
+    // @ts-ignore
+    [arr[idx], arr[end]] = [arr[end], arr[idx]];
 
-// async function createUsers() {
-//   const users: Prisma.UserCreateManyInput[] = [];
+    end--;
+  }
+}
 
-//   for (const _ of range(NUM_USERS)) {
-//     const firstName = faker.person.firstName();
-//     const lastName = faker.person.lastName();
+/* Create an iterator that can be used to range from 0 to n - 1 */
+function* range(n: number) {
+  for (let i = 0; i < n; i++) {
+    yield i;
+  }
+}
 
-//     users.push({
-//       firstName,
-//       lastName,
-//       email: faker.internet.email({
-//         firstName,
-//         lastName: `${lastName}${faker.number.int({ min: 1, max: 2000 })}`,
-//       }),
-//     });
-//   }
+function* batch<T>(arr: T[], size: number) {
+  for (let i = 0; i < arr.length; i += size) {
+    yield arr.slice(i, i + size);
+  }
+}
 
-//   await prisma.user.createMany({
-//     data: users,
-//   });
-// }
+const hotelNames = [
+  "Autograph Collection Hotels",
+  "Best Western",
+  "Bowman-Biltmore Hotels",
+  "Hilton Worldwide",
+  "Hyatt Hotels and Resorts",
+  "Kimpton hotels",
+  "Loews Hotels",
+  "Park Inn by Radisson",
+  "Park Plaza Hotels & Resorts",
+  "Red Lion Hotels Corporation",
+  "Wyndham brands",
+  "21c Museum Hotels",
+  "Ace Hotel",
+  "Affinia Hotel Collection",
+  "AJ Capital Partners",
+  "Aloft Hotels",
+  "AmericInn",
+  "Aqua-Aston Hospitality",
+  "Archer Hotels",
+  "Ascend Collection",
+  "Avid Hotels",
+  "Baymont by Wyndham",
+  "BD Hotels",
+  "Budget Host",
+  "Cambria Hotels",
+  "Candlewood Suites",
+  "Chartwell Leisure",
+  "Choice Hotels",
+  "Club Quarters",
+  "Coast Hotels",
+  "Cobblestone Hotels",
+  "Comfort Inn and Suites",
+  "Country Inn & Suites",
+  "The Davenport Hotel Collection",
+  "Days Inn",
+  "Drury Hotels",
+  "Econo Lodge",
+  "Eppley Hotel Company",
+  "Everhome Suites",
+  "Fontainebleau Development",
+  "Grand America Hotels & Resorts",
+  "Heartland Inn",
+  "Hilton Worldwide",
+  "Holiday Inn",
+  "Hospitality International",
+  "Hotel RL",
+  "Hyatt",
+  "IHG Army Hotels",
+  "InterContinental",
+  "Jameson Inn",
+  "Jimmy Buffett's Margaritaville",
+  "Knights Inn",
+  "La Quinta Inns & Suites",
+  "Lark Hotels",
+  "MainStay Suites",
+  "Manger Hotels",
+  "Marcus Hotels and Resorts",
+  "Masters Inn",
+  "MCR Hotels",
+  "Morgans Hotel Group",
+  "Motel 6",
+  "Nylo Hotels",
+  "Omni Hotels & Resorts",
+  "Outrigger Resorts & Hotels",
+  "Park Plaza Hotels & Resorts",
+  "Pendry Hotels and Resorts",
+  "Radisson Hotels",
+  "Radisson Red",
+  "Ramada",
+  "Red Carpet Inn",
+  "Red Lion Hotels",
+  "Red Lion Hotels Corporation",
+  "Red Roof Inn",
+  "The Ritz-Carlton Hotel Company",
+  "RockResorts",
+  "Rodeway Inn",
+  "Schimmel Hotels",
+  "Scottish Inns",
+  "Shilo Inns",
+  "Shoney's Inn",
+  "Sonesta International Hotels",
+  "Spark by Hilton",
+  "Standard Hotels",
+  "Suburban Studios",
+  "Susse Chalet",
+  "The Valorian Los Angeles",
+  "Tru by Hilton",
+  "The Trump Organization",
+  "U.S. Franchise Systems",
+  "Vagabond Inn",
+  "Valencia Hotel Group",
+  "Vantage Hospitality",
+  "Virgin Hotels",
+  "WoodSpring Suites",
+  "Wyndham Hotels & Resorts",
+  "Xenia Hotels & Resorts",
+];
 
-// async function createItems() {
-//   const items: Prisma.ItemCreateManyInput[] = [];
+const hotelLocationFns = [
+  faker.location.street,
+  faker.location.city,
+  faker.location.county,
+];
 
-//   for (const _ of range(NUM_ITEMS)) {
-//     items.push({
-//       name: faker.commerce.productName(),
-//       description: faker.commerce.productDescription(),
-//       category: faker.commerce.product(),
-//       price: faker.commerce.price({ dec: 2, max: 2000, min: 9.99 }),
-//       upc: faker.commerce.upc(),
-//     });
-//   }
+function getHotelName(): string {
+  const name =
+    hotelNames[faker.number.int({ min: 0, max: hotelNames.length - 1 })]!;
 
-//   await prisma.item.createMany({
-//     data: items,
-//   });
-// }
+  const location =
+    hotelLocationFns[
+      faker.number.int({ min: 0, max: hotelLocationFns.length - 1 })
+    ]!;
 
-// function createOrdersData(user: User) {
-//   const numOrders = faker.number.int({ min: 1, max: MAX_USER_ORDERS });
-
-//   return Array.from({ length: numOrders }).map(() => ({
-//     userId: user.id,
-//     createdAt: faker.date.past({ years: 1 }),
-//   }));
-// }
-
-// function createOrderItemsData(order: Order, next: () => Item) {
-//   const numItems = faker.number.int({ min: 1, max: MAX_ORDER_ITEMS });
-
-//   return Array.from({ length: numItems }).map(() => {
-//     const item = next();
-
-//     return {
-//       orderId: order.id,
-//       itemId: item.id,
-//       count: faker.number.int({ min: 1, max: 3 }),
-//       price: item.price,
-//     };
-//   });
-// }
-
-// // =====
-// // utils
-// // =====
-// export function random(max: number, inclusive: boolean = false) {
-//   return Math.floor(Math.random() * max) + Number(inclusive);
-// }
-
-// // Randomize (mutate) the order of elements in an array
-// export function randomize<T>(arr: T[]) {
-//   const len = arr.length;
-//   let end = len - 1;
-
-//   // We only need to loop len - 1 times because the final element would just swap with itself
-//   for (const _ of range(len - 1)) {
-//     const idx = random(end);
-
-//     // swap
-//     [arr[idx], arr[end]] = [arr[end], arr[idx]];
-
-//     end--;
-//   }
-// }
-
-// export function nextRandom<T>(input: T[]) {
-//   const arr = [...input];
-//   randomize(arr);
-
-//   let start = 0;
-
-//   // This will cycle through the array and wrap around to the beginning as needed
-//   return function next(): T {
-//     if (start === arr.length) {
-//       start = 0;
-//     }
-
-//     const el = arr[start];
-
-//     start++;
-
-//     return el;
-//   };
-// }
-
-// /* Create an iterator that can be used to range from 1 to n */
-// function* range(n: number) {
-//   for (let i = 1; i <= n; i++) {
-//     yield i;
-//   }
-// }
-
-// function* batch<T>(arr: T[], size: number) {
-//   for (let i = 0; i < arr.length; i += size) {
-//     yield arr.slice(i, i + size);
-//   }
-// }
+  return `${name} ${location}`;
+}

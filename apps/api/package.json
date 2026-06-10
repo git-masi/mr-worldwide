@@ -18,11 +18,12 @@
     "cors": "^2.8.6",
     "express": "5.2.1",
     "morgan": "^1.11.0",
-    "pg": "8.21.0"
+    "pg": "8.21.0",
+    "temporal-polyfill": "^0.3.2"
   },
   "devDependencies": {
-    "@repo/typescript-config": "workspace:*",
     "@faker-js/faker": "^10.4.0",
+    "@repo/typescript-config": "workspace:*",
     "@types/cors": "^2.8.19",
     "@types/express": "5.0.5",
     "@types/express-serve-static-core": "^5.1.1",
