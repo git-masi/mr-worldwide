@@ -21,6 +21,7 @@ import { faker } from "@faker-js/faker";
 import { range } from "@repo/numbers/range";
 import { Temporal } from "temporal-polyfill"; // Technically not needed for node v26
 import { BookingCreateManyInput } from "./generated/models";
+import { Prisma } from "./generated/client";
 
 type Checkout = { checkOut: string };
 
@@ -87,11 +88,11 @@ export function createBookingData(config: {
   start: Temporal.PlainDate;
   end: Temporal.PlainDate;
   hotel: { id: bigint; totalRooms: number };
-  customers: { id: bigint }[];
   shouldAddBooking: () => boolean;
   getLengthOfStay: () => number;
+  getCustomer: () => { id: bigint };
 }) {
-  const { start, end, hotel, customers, shouldAddBooking, getLengthOfStay } =
+  const { start, end, hotel, shouldAddBooking, getLengthOfStay, getCustomer } =
     config;
 
   const bookingData: BookingCreateManyInput[] = [];
@@ -111,7 +112,7 @@ export function createBookingData(config: {
       }
 
       // Get a random customer
-      const customer = faker.helpers.arrayElement(customers);
+      const customer = getCustomer();
 
       // Set the created at date for the booking to be some time in the past 90 days
       const createdAt = faker.date.recent({

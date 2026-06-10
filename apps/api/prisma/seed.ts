@@ -102,14 +102,16 @@ function createBookings(
   const oneYearFromNow = now.add({ years: 1 });
   // Add a new booking 70% of the time
   const shouldAddBooking = () => faker.datatype.boolean({ probability: 0.7 });
+  // Get a random customer
+  const getCustomer = () => faker.helpers.arrayElement(customers);
 
   const bookingData = createBookingData({
     start: now,
     end: oneYearFromNow,
     hotel,
-    customers,
     shouldAddBooking,
     getLengthOfStay,
+    getCustomer,
   });
 
   return prisma.booking.createMany({ data: bookingData });
