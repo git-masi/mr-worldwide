@@ -9,7 +9,6 @@ import {
   createReadStream,
   existsSync,
   mkdirSync,
-  type WriteStream,
 } from "node:fs";
 import { once } from "node:events";
 import pg from "pg";
