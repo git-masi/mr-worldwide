@@ -300,7 +300,7 @@ export function isHighValueGuest(
   return () => faker.datatype.boolean(highValueGuestProbability);
 }
 
-export async function createBookingsForDate(config: {
+export function createBookingsForDate(config: {
   currentDate: Temporal.PlainDate;
   hotelsWithRooms: HotelWithRooms[];
   nextGuestId: () => number;

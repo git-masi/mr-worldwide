@@ -254,7 +254,7 @@ async function createBookingData(
   for (const daysPassed of range(NUM_DAYS_IN_YEAR)) {
     const currentDate = now.add({ days: daysPassed });
 
-    await createBookingsForDate({
+    createBookingsForDate({
       currentDate,
       hotelsWithRooms,
       nextGuestId,
