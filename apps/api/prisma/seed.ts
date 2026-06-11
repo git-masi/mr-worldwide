@@ -214,12 +214,19 @@ async function createGuestData(path: string) {
     count++;
     guestData.push(`${firstName},${lastName},${email}`);
 
-    if (guestData.length > 10_000) {
+    // Flush chunks of data to disk
+    if (guestData.length > 25_000) {
       console.log(`Flushing guests to disk | ${count} of ${NUM_GUESTS}`);
       await write(guestData.join("\n") + "\n");
       // Reset the array so it can be reused
       guestData.length = 0;
     }
+  }
+
+  // Flush any remaining data
+  if (guestData.length > 0) {
+    console.log(`Flushing guests to disk | ${count} of ${NUM_GUESTS}`);
+    await write(guestData.join("\n") + "\n");
   }
 
   await end();
@@ -270,7 +277,7 @@ async function createBookingData(
 
     count += bookingData.length;
     console.log(
-      `Flushing bookings to disk | ${count} of ${APPROXIMATE_BOOKINGS}`,
+      `Flushing bookings to disk | ${count} of ~${APPROXIMATE_BOOKINGS}`,
     );
 
     await write(bookingData.join("\n") + "\n");
@@ -291,4 +298,6 @@ async function createRecordsFromCsv(path: string, query: string) {
 
     fileStream.on("error", rej);
   });
+
+  fileStream.close();
 }
