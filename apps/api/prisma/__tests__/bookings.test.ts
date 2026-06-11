@@ -11,14 +11,14 @@ describe("createBookingsForDate", () => {
     const nextGuestId = () => 1;
     const getLengthOfStay = () => 1;
     const bookingData: string[] = [];
-    const occupancyRate = 1;
+    const shouldAddBooking = () => true;
 
     createBookingsForDate({
       currentDate,
       hotelsWithRooms,
       nextGuestId,
       bookingData,
-      occupancyRate,
+      shouldAddBooking,
       getLengthOfStay,
     });
 
@@ -44,14 +44,14 @@ describe("createBookingsForDate", () => {
     const nextGuestId = () => 1;
     const getLengthOfStay = () => 1;
     const bookingData: string[] = [];
-    const occupancyRate = 1;
+    const shouldAddBooking = () => true;
 
     createBookingsForDate({
       currentDate,
       hotelsWithRooms,
       nextGuestId,
       bookingData,
-      occupancyRate,
+      shouldAddBooking,
       getLengthOfStay,
     });
 
@@ -80,14 +80,14 @@ describe("createBookingsForDate", () => {
     const nextGuestId = () => 1;
     const getLengthOfStay = () => 1;
     const bookingData: string[] = [];
-    const occupancyRate = 1;
+    const shouldAddBooking = () => true;
 
     createBookingsForDate({
       currentDate,
       hotelsWithRooms,
       nextGuestId,
       bookingData,
-      occupancyRate,
+      shouldAddBooking,
       getLengthOfStay,
     });
 
@@ -103,14 +103,14 @@ describe("createBookingsForDate", () => {
     const nextGuestId = () => 1;
     const getLengthOfStay = () => 1;
     const bookingData: string[] = [];
-    const occupancyRate = 0;
+    const shouldAddBooking = () => false;
 
     createBookingsForDate({
       currentDate,
       hotelsWithRooms,
       nextGuestId,
       bookingData,
-      occupancyRate,
+      shouldAddBooking,
       getLengthOfStay,
     });
 
@@ -127,14 +127,14 @@ describe("createBookingsForDate", () => {
     const nextGuestId = () => 1;
     const getLengthOfStay = () => 1;
     const bookingData: string[] = [];
-    const occupancyRate = 1;
+    const shouldAddBooking = () => true;
 
     createBookingsForDate({
       currentDate,
       hotelsWithRooms,
       nextGuestId,
       bookingData,
-      occupancyRate,
+      shouldAddBooking,
       getLengthOfStay,
     });
 
@@ -152,7 +152,7 @@ describe("createBookingsForDate", () => {
     const nextGuestId = () => 1;
     const getLengthOfStay = () => 1;
     const bookingData: string[] = [];
-    const occupancyRate = 1;
+    const shouldAddBooking = () => true;
 
     for (const daysPassed of range(2)) {
       // The room is free on day 2
@@ -163,7 +163,7 @@ describe("createBookingsForDate", () => {
         hotelsWithRooms,
         nextGuestId,
         bookingData,
-        occupancyRate,
+        shouldAddBooking,
         getLengthOfStay,
       });
     }
@@ -187,7 +187,7 @@ describe("createBookingsForDate", () => {
     const nextGuestId = () => 1;
     const getLengthOfStay = () => 1;
     const bookingData: string[] = [];
-    const occupancyRate = 1;
+    const shouldAddBooking = () => true;
 
     for (const daysPassed of range(3)) {
       const currentDate = start.add({ days: daysPassed });
@@ -197,7 +197,7 @@ describe("createBookingsForDate", () => {
         hotelsWithRooms,
         nextGuestId,
         bookingData,
-        occupancyRate,
+        shouldAddBooking,
         getLengthOfStay,
       });
     }

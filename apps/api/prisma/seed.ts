@@ -250,6 +250,11 @@ async function createBookingData(
     rooms: new Rooms(h.totalRooms),
   }));
 
+  const shouldAddBooking = () =>
+    faker.datatype.boolean({
+      probability: OCCUPANCY_RATE,
+    });
+
   const now = Temporal.Now.plainDateISO();
 
   // Open writable stream to CSV to save bookings
@@ -270,7 +275,7 @@ async function createBookingData(
       currentDate,
       hotelsWithRooms,
       bookingData,
-      occupancyRate: OCCUPANCY_RATE,
+      shouldAddBooking,
       nextGuestId,
       getLengthOfStay,
     });

@@ -199,44 +199,9 @@ export function getHotelName(): string {
   return `${name} ${location}`;
 }
 
-export function getRandomGuestId(config: {
-  totalGuests: number;
-  numHighValueGuests: number;
-  highValueGuestProbability: number;
-}): () => bigint {
-  const { totalGuests, numHighValueGuests, highValueGuestProbability } = config;
-
-  const guestIds = Array.from({ length: totalGuests }).map((_, i) => i + 1);
-
-  faker.helpers.shuffle(guestIds, { inplace: true });
-
-  const highValueGuestIds = guestIds.splice(0, numHighValueGuests);
-
-  const size = guestIds.length - 1;
-  let end = size;
-
-  return () => {
-    if (faker.datatype.boolean({ probability: highValueGuestProbability })) {
-      const guestId = faker.helpers.arrayElement(highValueGuestIds);
-
-      return BigInt(guestId);
-    }
-
-    const guestId = guestIds[faker.number.int(end)]!;
-
-    end--;
-
-    if (end < 0) {
-      end = size;
-    }
-
-    return BigInt(guestId);
-  };
-}
-
-// This function generates guest IDs which a probability of returning a previously used ID
+// This function generates guest IDs with some probability of returning a previously used ID
 // if the guest was a "high value" guest.
-// High value guests are just guests that we want to use in many bookings.
+// High value guests are guests that we want to use in many bookings.
 export function getNextGuestId(config: {
   totalGuests: number;
   useHighValueGuest: (poolSize: number) => boolean;
@@ -304,7 +269,7 @@ export function createBookingsForDate(config: {
   currentDate: Temporal.PlainDate;
   hotelsWithRooms: HotelWithRooms[];
   bookingData: string[];
-  occupancyRate: number;
+  shouldAddBooking: () => boolean;
   nextGuestId: () => number;
   getLengthOfStay: () => number;
 }) {
@@ -313,41 +278,12 @@ export function createBookingsForDate(config: {
     hotelsWithRooms,
     nextGuestId,
     bookingData,
-    occupancyRate,
+    shouldAddBooking,
     getLengthOfStay,
   } = config;
 
-  const { availableHotels, hotelBookingAttemptCount } = getAvailableHotels(
-    currentDate,
-    hotelsWithRooms,
-  );
-
-  if (availableHotels.length < 1) {
-    return;
-  }
-
-  let end = availableHotels.length - 1;
-
-  while (end >= 0) {
-    const idx = faker.number.int({ min: 0, max: end });
-    const hotel = availableHotels[idx]!;
-    const hotelIdStr = hotel.id.toString();
-
-    hotelBookingAttemptCount[hotelIdStr]! -= 1;
-    if (hotelBookingAttemptCount[hotelIdStr] === 0) {
-      // Swap hotel to end to that it is out of bounds
-      // @ts-ignore
-      [availableHotels[idx], availableHotels[end]] = [
-        availableHotels[end],
-        availableHotels[idx],
-      ];
-      end--;
-    }
-
-    const shouldAddBooking = faker.datatype.boolean({
-      probability: occupancyRate,
-    });
-    if (!shouldAddBooking) {
+  for (const hotel of getAvailableHotels(currentDate, hotelsWithRooms)) {
+    if (!shouldAddBooking()) {
       continue;
     }
 
@@ -356,29 +292,40 @@ export function createBookingsForDate(config: {
     const futureDate = currentDate.add({ days: getLengthOfStay() });
     const checkOut = futureDate.toPlainDateTime().toString();
 
+    // `rooms.occupy` mutates the data in `rooms`
     hotel.rooms.occupy(futureDate);
 
     bookingData.push(`${hotel.id},${guestId},${checkIn},${checkOut}`);
   }
 }
 
-function getAvailableHotels(
+function* getAvailableHotels(
   currentDate: Temporal.PlainDate,
   hotelsWithRooms: HotelWithRooms[],
 ) {
-  const availableHotels: HotelWithRooms[] = [];
-  const hotelBookingAttemptCount: Record<string, number> = {};
-
-  for (const hotel of hotelsWithRooms) {
+  let availableHotels = hotelsWithRooms.filter((hotel) => {
+    // `rooms.vacate` mutates the data in `rooms`
     hotel.rooms.vacate(currentDate);
+    return hotel.rooms.getNumAvailableRooms() > 0;
+  });
 
-    const numRoomsAvailable = hotel.rooms.getNumAvailableRooms();
+  const hotelBookingAttemptCount: Record<string, number> = Object.fromEntries(
+    availableHotels.map((hotel) => [
+      hotel.id.toString(),
+      hotel.rooms.getNumAvailableRooms(),
+    ]),
+  );
 
-    if (numRoomsAvailable > 0) {
-      availableHotels.push(hotel);
-      hotelBookingAttemptCount[hotel.id.toString()] = numRoomsAvailable;
+  while (availableHotels.length > 0) {
+    const hotel = faker.helpers.arrayElement(availableHotels);
+    const hotelIdStr = hotel.id.toString();
+
+    hotelBookingAttemptCount[hotelIdStr]! -= 1;
+
+    if (hotelBookingAttemptCount[hotelIdStr] === 0) {
+      availableHotels = availableHotels.filter((h) => h.id !== hotel.id);
     }
-  }
 
-  return { availableHotels, hotelBookingAttemptCount };
+    yield hotel;
+  }
 }
