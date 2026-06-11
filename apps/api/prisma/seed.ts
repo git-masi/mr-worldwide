@@ -34,6 +34,8 @@ const MIN_HOTEL_ROOMS = 10;
 const MAX_HOTEL_ROOMS = 100;
 const APPROXIMATE_AVERAGE_HOTEL_ROOMS = (MAX_HOTEL_ROOMS + MIN_HOTEL_ROOMS) / 2;
 const OCCUPANCY_RATE = 0.7;
+// sum of each length of stay * it's weight / sum of weights
+// (10×1+15×2+25×3+20×4+20×5+5×6+5×7) / (10+15+25+20+20+5+5)
 const WEIGHTED_AVERAGE_NIGHTS = 3.6;
 // We use a formula to estimate the number of bookings we will have.
 // This is useful for determining how many customers we will need.
