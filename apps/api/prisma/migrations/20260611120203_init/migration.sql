@@ -2,7 +2,7 @@
 CREATE TABLE "hotels" (
     "id" BIGSERIAL NOT NULL,
     "name" TEXT NOT NULL,
-    "totalRooms" INTEGER NOT NULL,
+    "total_rooms" INTEGER NOT NULL,
 
     CONSTRAINT "hotels_pkey" PRIMARY KEY ("id")
 );
@@ -22,8 +22,8 @@ CREATE TABLE "bookings" (
 -- CreateTable
 CREATE TABLE "customers" (
     "id" BIGSERIAL NOT NULL,
-    "firstName" TEXT NOT NULL,
-    "lastName" TEXT NOT NULL,
+    "first_name" TEXT NOT NULL,
+    "last_name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
 
     CONSTRAINT "customers_pkey" PRIMARY KEY ("id")

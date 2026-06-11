@@ -28,13 +28,23 @@ const adapter = new PrismaPg({
 
 const prisma = new PrismaClient({ adapter });
 
+const NUM_DAYS_IN_YEAR = 365;
 const NUM_HOTELS = 500;
 const MIN_HOTEL_ROOMS = 10;
 const MAX_HOTEL_ROOMS = 100;
+const APPROXIMATE_AVERAGE_HOTEL_ROOMS = (MAX_HOTEL_ROOMS + MIN_HOTEL_ROOMS) / 2;
 const OCCUPANCY_RATE = 0.7;
-// Calculate the number of customers based on hotel rooms so that we reduce the likelihood
-// of customers booking overlapping dates at different hotels.
-const NUM_CUSTOMERS = NUM_HOTELS * MAX_HOTEL_ROOMS * OCCUPANCY_RATE;
+const WEIGHTED_AVERAGE_NIGHTS = 3.6;
+// (500 * ((100 + 10) / 2) * 365 * .7) / 3.6 = 1,951,736
+// From experience the number of bookings produced is closer to 2.4 million
+const APPROXIMATE_BOOKINGS =
+  (NUM_HOTELS *
+    APPROXIMATE_AVERAGE_HOTEL_ROOMS *
+    NUM_DAYS_IN_YEAR *
+    OCCUPANCY_RATE) /
+  WEIGHTED_AVERAGE_NIGHTS;
+// Calculate number of customers based on expected bookings to ensure a large pool available
+const NUM_CUSTOMERS = APPROXIMATE_BOOKINGS / 2;
 const BOOKINGS_BUFFER = 50_000;
 
 // This allows `BigInt` values to be serialized using `JSON.stringify`.

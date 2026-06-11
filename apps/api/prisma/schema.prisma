@@ -10,7 +10,7 @@ datasource db {
 model Hotel {
   id         BigInt    @id @default(autoincrement())
   name       String
-  totalRooms Int
+  totalRooms Int       @map("total_rooms")
   bookings   Booking[]
 
   @@map("hotels")
@@ -34,8 +34,8 @@ model Booking {
 // This enables a "check out as guest" workflow.
 model Customer {
   id        BigInt    @id @default(autoincrement())
-  firstName String
-  lastName  String
+  firstName String    @map("first_name")
+  lastName  String    @map("last_name")
   email     String
   bookings  Booking[]
   // Add nullable user ID if/when users are added in the future.
