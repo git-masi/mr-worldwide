@@ -27,7 +27,7 @@ describe("createBookingsForDate", () => {
     expect(rooms.getNumAvailableRooms()).toEqual(0);
   });
 
-  test("create two bookings", { timeout: 1000 }, () => {
+  test("create two bookings for different hotels", { timeout: 1000 }, () => {
     const currentDate = Temporal.PlainDate.from("2026-01-01");
     const hotelsWithRooms = [
       { id: BigInt(1), totalRooms: 1, rooms: new Rooms(1) },
@@ -46,6 +46,15 @@ describe("createBookingsForDate", () => {
     });
 
     expect(bookingData).toHaveLength(2);
+
+    const dateString = currentDate.toPlainDateTime().toString();
+
+    expect(bookingData).toMatchObject(
+      expect.arrayContaining([
+        expect.stringContaining(`1,1,${dateString}`),
+        expect.stringContaining(`2,1,${dateString}`),
+      ]),
+    );
   });
 
   test("create many bookings", { timeout: 1000 }, () => {
