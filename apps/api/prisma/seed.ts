@@ -35,7 +35,9 @@ const MAX_HOTEL_ROOMS = 100;
 const APPROXIMATE_AVERAGE_HOTEL_ROOMS = (MAX_HOTEL_ROOMS + MIN_HOTEL_ROOMS) / 2;
 const OCCUPANCY_RATE = 0.7;
 const WEIGHTED_AVERAGE_NIGHTS = 3.6;
-// (500 * ((100 + 10) / 2) * 365 * .7) / 3.6 = 1,951,736
+// We use a formula to estimate the number of bookings we will have.
+// This is useful for determining how many customers we will need.
+// (500 * 55 * 365 * .7) / 3.6 = 1,951,736
 // From experience the number of bookings produced is closer to 2.4 million
 const APPROXIMATE_BOOKINGS =
   (NUM_HOTELS *
@@ -197,8 +199,10 @@ async function createBookings(
     });
 
     if (bookingData.length > BOOKINGS_BUFFER) {
-      count++;
-      console.log(`Flushing bookings to disk | ${count}`);
+      count += bookingData.length;
+      console.log(
+        `Flushing bookings to disk | ${count} of ${APPROXIMATE_BOOKINGS}`,
+      );
       await write(bookingData.join("\n") + "\n");
       // Reset the array so it can be reused
       bookingData.length = 0;
