@@ -9,6 +9,7 @@ import {
   createReadStream,
   existsSync,
   mkdirSync,
+  type WriteStream,
 } from "node:fs";
 import { once } from "node:events";
 import pg from "pg";
@@ -46,7 +47,33 @@ const APPROXIMATE_BOOKINGS =
 const NUM_GUESTS = APPROXIMATE_BOOKINGS / 2;
 const BASE_HIGH_VALUE_GUEST_PROBABILITY = 0.05;
 const NUM_HIGH_VALUE_GUESTS = NUM_GUESTS * BASE_HIGH_VALUE_GUEST_PROBABILITY;
-const BOOKINGS_BUFFER = 50_000;
+
+const COPY_BOOKINGS_QUERY = `
+  COPY bookings (
+    hotel_id,
+    guest_id,
+    check_in,
+    check_out
+  )
+  FROM STDIN
+  WITH (
+    FORMAT csv,
+    HEADER true
+  )
+`;
+
+const COPY_GUESTS_QUERY = `
+  COPY guests (
+    first_name,
+    last_name,
+    email
+  )
+  FROM STDIN
+  WITH (
+    FORMAT csv,
+    HEADER true
+  )
+`;
 
 const postgresUser = process.env.POSTGRES_USER;
 const postgresPassword = process.env.POSTGRES_PASSWORD;
@@ -115,42 +142,13 @@ async function main() {
   await createGuestData(guestsPath);
   console.log(`✅ Created guests data`);
 
-  createRecordsFromCsv(
-    guestsPath,
-    `
-      COPY guests (
-        first_name,
-        last_name,
-        email
-      )
-      FROM STDIN
-      WITH (
-        FORMAT csv,
-        HEADER true
-      )
-    `,
-  );
+  createRecordsFromCsv(guestsPath, COPY_GUESTS_QUERY);
   console.log(`✅ Created guests`);
 
   await createBookingData(bookingsPath, hotels);
   console.log(`✅ Created booking data`);
 
-  await createRecordsFromCsv(
-    bookingsPath,
-    `
-      COPY bookings (
-        hotel_id,
-        guest_id,
-        check_in,
-        check_out
-      )
-      FROM STDIN
-      WITH (
-        FORMAT csv,
-        HEADER true
-      )
-    `,
-  );
+  await createRecordsFromCsv(bookingsPath, COPY_BOOKINGS_QUERY);
   console.log(`✅ Created bookings`);
 }
 
@@ -174,15 +172,26 @@ function createHotels() {
   });
 }
 
-async function createGuestData(path: string) {
-  // Open stream to CSV to save guests
+function getStreamWriter(path: string) {
   const output = createWriteStream(path);
 
-  async function write(chunk: string) {
+  const write = async (chunk: string) => {
     if (!output.write(chunk)) {
       await once(output, "drain");
     }
-  }
+  };
+
+  const end = async () => {
+    output.end();
+    await once(output, "finish");
+  };
+
+  return { write, end };
+}
+
+async function createGuestData(path: string) {
+  // Open a writable stream to CSV to save guests
+  const { write, end } = getStreamWriter(path);
 
   // Write CSV header
   await write("first_name,last_name,email\n");
@@ -210,8 +219,7 @@ async function createGuestData(path: string) {
     }
   }
 
-  output.end();
-  await once(output, "finish");
+  await end();
 }
 
 async function createBookingData(
@@ -234,14 +242,8 @@ async function createBookingData(
 
   const now = Temporal.Now.plainDateISO();
 
-  // Open stream to CSV to save bookings
-  const output = createWriteStream(path);
-
-  async function write(chunk: string) {
-    if (!output.write(chunk)) {
-      await once(output, "drain");
-    }
-  }
+  // Open writable stream to CSV to save bookings
+  const { write, end } = getStreamWriter(path);
 
   // Write CSV header
   await write("hotel_id,guest_id,check_in,check_out\n");
@@ -271,8 +273,7 @@ async function createBookingData(
     bookingData.length = 0;
   }
 
-  output.end();
-  await once(output, "finish");
+  end();
 }
 
 async function createBookingsForDate(
