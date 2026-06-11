@@ -15,11 +15,9 @@ import pg from "pg";
 import { from as copyFrom } from "pg-copy-streams";
 
 import {
-  createBookingData,
   getHotelName,
   getLengthOfStay,
   getNextGuestId,
-  getRandomGuest,
   isHighValueGuest,
   Rooms,
   useHighValueGuest,
@@ -113,130 +111,14 @@ async function main() {
   const hotels = await createHotels();
   console.log(`✅ Created hotels`);
 
-  const hotelsWithRooms: HotelWithRooms[] = hotels.map((h) => ({
-    id: h.id,
-    rooms: new Rooms(h.totalRooms),
-  }));
-
   await createGuests();
   console.log(`✅ Created guests`);
 
-  const nextGuestId = getNextGuestId({
-    totalGuests: NUM_GUESTS,
-    isHighValueGuest: isHighValueGuest(BASE_HIGH_VALUE_GUEST_PROBABILITY),
-    useHighValueGuest: useHighValueGuest(
-      NUM_HIGH_VALUE_GUESTS,
-      BASE_HIGH_VALUE_GUEST_PROBABILITY,
-    ),
-  });
+  await createBookingData(path, hotels);
+  console.log(`✅ Created booking data`);
 
-  const now = Temporal.Now.plainDateISO();
-
-  // Open stream to CSV to save bookings
-  const output = createWriteStream(path);
-
-  async function write(chunk: string) {
-    if (!output.write(chunk)) {
-      await once(output, "drain");
-    }
-  }
-
-  await write("hotel_id,guest_id,check_in,check_out\n");
-
-  // Count the bookings so that we have something to look at in the terminal :D
-  let count = 0;
-
-  // Create bookings for 1 year starting from now
-  for (const daysPassed of range(NUM_DAYS_IN_YEAR)) {
-    const currentDate = now.add({ days: daysPassed });
-
-    const { availableHotels, hotelBookingAttemptCount } =
-      getAvailableHotels(hotelsWithRooms);
-    let end = availableHotels.length - 1;
-
-    if (availableHotels.length < 1) {
-      continue;
-    }
-
-    const bookingData: string[] = [];
-
-    while (end >= 0) {
-      const idx = faker.number.int({ min: 0, max: end });
-      const hotel = availableHotels[idx]!;
-      const hotelIdStr = hotel.id.toString();
-
-      hotelBookingAttemptCount[hotelIdStr]! -= 1;
-      if (hotelBookingAttemptCount[hotelIdStr] === 0) {
-        // Swap hotel to end to that it is out of bounds
-        // @ts-ignore
-        [availableHotels[idx], availableHotels[end]] = [
-          availableHotels[end],
-          availableHotels[idx],
-        ];
-        end--;
-      }
-
-      const shouldAddBooking = faker.datatype.boolean({
-        probability: OCCUPANCY_RATE,
-      });
-      if (!shouldAddBooking) {
-        continue;
-      }
-
-      const guestId = nextGuestId();
-      const checkIn = currentDate.toPlainDateTime().toString();
-      const checkOut = currentDate
-        .add({ days: getLengthOfStay() })
-        .toPlainDateTime()
-        .toString();
-
-      bookingData.push(`${hotel.id},${guestId},${checkIn},${checkOut}`);
-    }
-
-    count += bookingData.length;
-    console.log(
-      `Flushing bookings to disk | ${count} of ${APPROXIMATE_BOOKINGS}`,
-    );
-
-    await write(bookingData.join("\n") + "\n");
-    // Reset the array so it can be reused
-    bookingData.length = 0;
-  }
-
-  output.end();
-  await once(output, "finish");
-
-  // ================
-  // Stream CSV to DB
-  // ================
-
-  await pgClient.connect();
-
-  const copyStream = pgClient.query(
-    copyFrom(`
-      COPY bookings (
-        hotel_id,
-        guest_id,
-        check_in,
-        check_out
-      )
-      FROM STDIN
-      WITH (
-        FORMAT csv,
-        HEADER true
-      )
-    `),
-  );
-
-  const fileStream = createReadStream(path);
-
-  await new Promise((res, rej) => {
-    fileStream.pipe(copyStream).on("finish", res).on("error", rej);
-
-    fileStream.on("error", rej);
-  });
-
-  await pgClient.end();
+  await createBookings(path);
+  console.log(`✅ Created bookings`);
 }
 
 function createHotels() {
@@ -282,6 +164,116 @@ function createGuests() {
   });
 }
 
+async function createBookingData(
+  path: string,
+  hotels: { id: bigint; totalRooms: number }[],
+) {
+  const nextGuestId = getNextGuestId({
+    totalGuests: NUM_GUESTS,
+    isHighValueGuest: isHighValueGuest(BASE_HIGH_VALUE_GUEST_PROBABILITY),
+    useHighValueGuest: useHighValueGuest(
+      NUM_HIGH_VALUE_GUESTS,
+      BASE_HIGH_VALUE_GUEST_PROBABILITY,
+    ),
+  });
+
+  const hotelsWithRooms: HotelWithRooms[] = hotels.map((h) => ({
+    id: h.id,
+    rooms: new Rooms(h.totalRooms),
+  }));
+
+  const now = Temporal.Now.plainDateISO();
+
+  // Open stream to CSV to save bookings
+  const output = createWriteStream(path);
+
+  async function write(chunk: string) {
+    if (!output.write(chunk)) {
+      await once(output, "drain");
+    }
+  }
+
+  // Write CSV header
+  await write("hotel_id,guest_id,check_in,check_out\n");
+
+  const bookingData: string[] = [];
+  // Count the bookings so that we have something to look at in the terminal :D
+  let count = 0;
+
+  // Create bookings for 1 year starting from now
+  for (const daysPassed of range(NUM_DAYS_IN_YEAR)) {
+    const currentDate = now.add({ days: daysPassed });
+
+    await createBookingsForDate(
+      currentDate,
+      hotelsWithRooms,
+      nextGuestId,
+      bookingData,
+    );
+
+    count += bookingData.length;
+    console.log(
+      `Flushing bookings to disk | ${count} of ${APPROXIMATE_BOOKINGS}`,
+    );
+
+    await write(bookingData.join("\n") + "\n");
+    // Reset the array so it can be reused
+    bookingData.length = 0;
+  }
+
+  output.end();
+  await once(output, "finish");
+}
+
+async function createBookingsForDate(
+  currentDate: Temporal.PlainDate,
+  hotelsWithRooms: HotelWithRooms[],
+  nextGuestId: () => number,
+  bookingData: string[],
+) {
+  const { availableHotels, hotelBookingAttemptCount } =
+    getAvailableHotels(hotelsWithRooms);
+
+  if (availableHotels.length < 1) {
+    return;
+  }
+
+  let end = availableHotels.length - 1;
+
+  while (end >= 0) {
+    const idx = faker.number.int({ min: 0, max: end });
+    const hotel = availableHotels[idx]!;
+    const hotelIdStr = hotel.id.toString();
+
+    hotelBookingAttemptCount[hotelIdStr]! -= 1;
+    if (hotelBookingAttemptCount[hotelIdStr] === 0) {
+      // Swap hotel to end to that it is out of bounds
+      // @ts-ignore
+      [availableHotels[idx], availableHotels[end]] = [
+        availableHotels[end],
+        availableHotels[idx],
+      ];
+      end--;
+    }
+
+    const shouldAddBooking = faker.datatype.boolean({
+      probability: OCCUPANCY_RATE,
+    });
+    if (!shouldAddBooking) {
+      continue;
+    }
+
+    const guestId = nextGuestId();
+    const checkIn = currentDate.toPlainDateTime().toString();
+    const checkOut = currentDate
+      .add({ days: getLengthOfStay() })
+      .toPlainDateTime()
+      .toString();
+
+    bookingData.push(`${hotel.id},${guestId},${checkIn},${checkOut}`);
+  }
+}
+
 function getAvailableHotels(hotelsWithRooms: HotelWithRooms[]) {
   const availableHotels: HotelWithRooms[] = [];
   const hotelBookingAttemptCount: Record<string, number> = {};
@@ -298,71 +290,7 @@ function getAvailableHotels(hotelsWithRooms: HotelWithRooms[]) {
   return { availableHotels, hotelBookingAttemptCount };
 }
 
-async function createBookings(
-  hotels: { id: bigint; totalRooms: number }[],
-  guests: { id: bigint }[],
-  path: string,
-) {
-  const now = Temporal.Now.plainDateISO();
-  const oneYearFromNow = now.add({ years: 1 });
-  // Add a new booking 70% of the time for all hotels.
-  const shouldAddBooking = () =>
-    faker.datatype.boolean({ probability: OCCUPANCY_RATE });
-  // Use the same random guest function across all hotels.
-  const getGuest = getRandomGuest(guests);
-
-  // =====================
-  // Write bookings to CSV
-  // =====================
-
-  const output = createWriteStream(path);
-
-  async function write(chunk: string) {
-    if (!output.write(chunk)) {
-      await once(output, "drain");
-    }
-  }
-
-  await write("hotel_id,guest_id,check_in,check_out\n");
-
-  let bookingData: string[] = [];
-  let count = 0;
-
-  for (const hotel of hotels) {
-    createBookingData({
-      start: now,
-      end: oneYearFromNow,
-      hotel,
-      shouldAddBooking,
-      getLengthOfStay,
-      getGuest,
-    }).forEach((booking) => {
-      bookingData.push(
-        `${booking.hotelId},${booking.guestId},${booking.checkIn},${booking.checkOut}`,
-      );
-    });
-
-    if (bookingData.length > BOOKINGS_BUFFER) {
-      count += bookingData.length;
-      console.log(
-        `Flushing bookings to disk | ${count} of ${APPROXIMATE_BOOKINGS}`,
-      );
-      await write(bookingData.join("\n") + "\n");
-      // Reset the array so it can be reused
-      bookingData.length = 0;
-    }
-  }
-
-  output.end();
-
-  await once(output, "finish");
-
-  console.log("Finished writing bookings to CSV");
-
-  // ================
-  // Stream CSV to DB
-  // ================
-
+async function createBookings(path: string) {
   await pgClient.connect();
 
   const copyStream = pgClient.query(
@@ -391,3 +319,97 @@ async function createBookings(
 
   await pgClient.end();
 }
+
+// async function createBookings(
+//   hotels: { id: bigint; totalRooms: number }[],
+//   guests: { id: bigint }[],
+//   path: string,
+// ) {
+//   const now = Temporal.Now.plainDateISO();
+//   const oneYearFromNow = now.add({ years: 1 });
+//   // Add a new booking 70% of the time for all hotels.
+//   const shouldAddBooking = () =>
+//     faker.datatype.boolean({ probability: OCCUPANCY_RATE });
+//   // Use the same random guest function across all hotels.
+//   const getGuest = getRandomGuest(guests);
+
+//   // =====================
+//   // Write bookings to CSV
+//   // =====================
+
+//   const output = createWriteStream(path);
+
+//   async function write(chunk: string) {
+//     if (!output.write(chunk)) {
+//       await once(output, "drain");
+//     }
+//   }
+
+//   await write("hotel_id,guest_id,check_in,check_out\n");
+
+//   let bookingData: string[] = [];
+//   let count = 0;
+
+//   for (const hotel of hotels) {
+//     createBookingData({
+//       start: now,
+//       end: oneYearFromNow,
+//       hotel,
+//       shouldAddBooking,
+//       getLengthOfStay,
+//       getGuest,
+//     }).forEach((booking) => {
+//       bookingData.push(
+//         `${booking.hotelId},${booking.guestId},${booking.checkIn},${booking.checkOut}`,
+//       );
+//     });
+
+//     if (bookingData.length > BOOKINGS_BUFFER) {
+//       count += bookingData.length;
+//       console.log(
+//         `Flushing bookings to disk | ${count} of ${APPROXIMATE_BOOKINGS}`,
+//       );
+//       await write(bookingData.join("\n") + "\n");
+//       // Reset the array so it can be reused
+//       bookingData.length = 0;
+//     }
+//   }
+
+//   output.end();
+
+//   await once(output, "finish");
+
+//   console.log("Finished writing bookings to CSV");
+
+//   // ================
+//   // Stream CSV to DB
+//   // ================
+
+//   await pgClient.connect();
+
+//   const copyStream = pgClient.query(
+//     copyFrom(`
+//       COPY bookings (
+//         hotel_id,
+//         guest_id,
+//         check_in,
+//         check_out
+//       )
+//       FROM STDIN
+//       WITH (
+//         FORMAT csv,
+//         HEADER true
+//       )
+//     `),
+//   );
+
+//   const fileStream = createReadStream(path);
+
+//   await new Promise((res, rej) => {
+//     fileStream.pipe(copyStream).on("finish", res).on("error", rej);
+
+//     fileStream.on("error", rej);
+//   });
+
+//   await pgClient.end();
+// }
