@@ -303,9 +303,10 @@ export function isHighValueGuest(
 export function createBookingsForDate(config: {
   currentDate: Temporal.PlainDate;
   hotelsWithRooms: HotelWithRooms[];
-  nextGuestId: () => number;
   bookingData: string[];
   occupancyRate: number;
+  nextGuestId: () => number;
+  getLengthOfStay: () => number;
 }) {
   const {
     currentDate,
@@ -313,6 +314,7 @@ export function createBookingsForDate(config: {
     nextGuestId,
     bookingData,
     occupancyRate,
+    getLengthOfStay,
   } = config;
 
   const { availableHotels, hotelBookingAttemptCount } = getAvailableHotels(

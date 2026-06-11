@@ -21,6 +21,7 @@ import {
   isHighValueGuest,
   Rooms,
   useHighValueGuest,
+  getLengthOfStay,
   type HotelWithRooms,
 } from "./utils";
 
@@ -257,9 +258,10 @@ async function createBookingData(
     createBookingsForDate({
       currentDate,
       hotelsWithRooms,
-      nextGuestId,
       bookingData,
       occupancyRate: OCCUPANCY_RATE,
+      nextGuestId,
+      getLengthOfStay,
     });
 
     count += bookingData.length;
