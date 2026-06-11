@@ -312,3 +312,69 @@ export function getRandomGuestId(config: {
     return BigInt(guestId);
   };
 }
+
+// This function generates guest IDs which a probability of returning a previously used ID
+// if the guest was a "high value" guest.
+// High value guests are just guests that we want to use in many bookings.
+export function getNextGuestId(config: {
+  totalGuests: number;
+  useHighValueGuest: (poolSize: number) => boolean;
+  isHighValueGuest: () => boolean;
+}) {
+  const { totalGuests, useHighValueGuest, isHighValueGuest } = config;
+  const gen = range(totalGuests);
+  const highValueGuests: number[] = [];
+
+  return () => {
+    if (useHighValueGuest(highValueGuests.length)) {
+      return faker.helpers.arrayElement(highValueGuests);
+    }
+
+    const value = gen.next().value;
+
+    // Fall back to a high value guest ID if there are no new guest IDs to generate
+    if (typeof value !== "number") {
+      if (highValueGuests.length < 1) {
+        throw new Error(
+          "Cannot generate new guest ID nor get high value guest ID",
+        );
+      }
+
+      return faker.helpers.arrayElement(highValueGuests);
+    }
+
+    const guestId = value + 1;
+
+    // Determine if guest should become a high value guest
+    if (isHighValueGuest()) {
+      highValueGuests.push(guestId);
+    }
+
+    return guestId;
+  };
+}
+
+export function useHighValueGuest(
+  numHighValueGuests: number,
+  baseHighValueGuestProbability: number,
+): (poolSize: number) => boolean {
+  return (poolSize: number) => {
+    // As the pool of high value increases so too will this number
+    const currentFractionOfHighValueGuests = poolSize / numHighValueGuests;
+
+    // Select the smaller probability between the current fraction and the baseline
+    // This means that we are less likely to select high value customers early on when creating bookings
+    const highValueGuestProbability = Math.min(
+      currentFractionOfHighValueGuests,
+      baseHighValueGuestProbability,
+    );
+
+    return poolSize > 0 && faker.datatype.boolean(highValueGuestProbability);
+  };
+}
+
+export function isHighValueGuest(
+  highValueGuestProbability: number,
+): () => boolean {
+  return () => faker.datatype.boolean(highValueGuestProbability);
+}

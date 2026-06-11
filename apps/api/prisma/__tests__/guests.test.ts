@@ -1,30 +1,75 @@
 import { describe, test, expect } from "vitest";
-import { getRandomGuest } from "../utils";
+import { getNextGuestId } from "../utils";
 
-describe("getRandomGuest", () => {
-  test("return all guests", () => {
-    const guests = [{ id: BigInt(1) }, { id: BigInt(2) }];
-    const getNextGuest = getRandomGuest(guests);
+describe("getNextGuestId", () => {
+  test("return IDs in ascending order from 1", () => {
+    const nextId = getNextGuestId({
+      totalGuests: 3,
+      isHighValueGuest: () => false,
+      useHighValueGuest: () => false,
+    });
 
-    const result = [getNextGuest(), getNextGuest()];
-
-    expect(result).toMatchObject(expect.arrayContaining(guests));
+    expect([nextId(), nextId(), nextId()]).toMatchObject([1, 2, 3]);
   });
 
-  test("repeat guest after all have been seen", () => {
-    const guests = [{ id: BigInt(1) }, { id: BigInt(2) }];
-    const getNextGuest = getRandomGuest(guests);
+  test("throw error if no new IDs and no high value guests", () => {
+    const nextId = getNextGuestId({
+      totalGuests: 3,
+      isHighValueGuest: () => false,
+      useHighValueGuest: () => false,
+    });
 
-    const result = [
-      getNextGuest(),
-      getNextGuest(),
-      getNextGuest(),
-      getNextGuest(),
-    ];
+    nextId();
+    nextId();
+    nextId();
 
-    const set = new Set(result);
+    expect(() => nextId()).toThrow(
+      "Cannot generate new guest ID nor get high value guest ID",
+    );
+  });
 
-    // There should only be two unique objcts
-    expect(set.size).toBe(2);
+  test("always return high value guest", () => {
+    const nextId = getNextGuestId({
+      totalGuests: 3,
+      // First guest ID is added to pool
+      isHighValueGuest: () => true,
+      // Subsequent requests return first guest ID
+      useHighValueGuest: (poolSize: number) => poolSize === 1,
+    });
+
+    expect([nextId(), nextId(), nextId()]).toMatchObject([1, 1, 1]);
+  });
+
+  test("every other guest is high value", () => {
+    const nextId = getNextGuestId({
+      totalGuests: 10,
+      // Only the first guest is high value
+      isHighValueGuest: (() => {
+        let shouldUse = true;
+
+        return () => {
+          if (shouldUse) {
+            shouldUse = false;
+            return true;
+          }
+
+          return false;
+        };
+      })(),
+      // Every other call return the first guest ID
+      useHighValueGuest: (() => {
+        let count = 0;
+
+        return (_: number) => {
+          count++;
+
+          return count % 2 === 0;
+        };
+      })(),
+    });
+
+    expect(Array.from({ length: 20 }).map(nextId)).toMatchObject([
+      1, 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7, 1, 8, 1, 9, 1, 10, 1,
+    ]);
   });
 });

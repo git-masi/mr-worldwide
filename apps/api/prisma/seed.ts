@@ -18,7 +18,11 @@ import {
   createBookingData,
   getHotelName,
   getLengthOfStay,
+  getNextGuestId,
   getRandomGuest,
+  isHighValueGuest,
+  Rooms,
+  useHighValueGuest,
 } from "./utils";
 
 const adapter = new PrismaPg({
@@ -48,14 +52,9 @@ const APPROXIMATE_BOOKINGS =
   WEIGHTED_AVERAGE_NIGHTS;
 // Calculate number of guests based on expected bookings to ensure a large pool available
 const NUM_GUESTS = APPROXIMATE_BOOKINGS / 2;
+const BASE_HIGH_VALUE_GUEST_PROBABILITY = 0.05;
+const NUM_HIGH_VALUE_GUESTS = NUM_GUESTS * BASE_HIGH_VALUE_GUEST_PROBABILITY;
 const BOOKINGS_BUFFER = 50_000;
-
-// This allows `BigInt` values to be serialized using `JSON.stringify`.
-// There are alternative ways to achieve the same results, but this is the easiest for our use case.
-// @ts-ignore
-BigInt.prototype.toJSON = function () {
-  return this.toString();
-};
 
 const postgresUser = process.env.POSTGRES_USER;
 const postgresPassword = process.env.POSTGRES_PASSWORD;
@@ -92,15 +91,51 @@ async function main() {
     mkdirSync(dir, { recursive: true });
   }
 
+  const numExistingUsers = await prisma.guest.count();
+
   await prisma.booking.deleteMany();
   await prisma.hotel.deleteMany();
   await prisma.guest.deleteMany();
 
+  if (numExistingUsers > 0) {
+    // This is necessary to ensure that our user selection logic works as expected.
+    prisma.$executeRawUnsafe(
+      `ALTER TABLE guests ALTER COLUMN id RESTART WITH 1;`,
+    );
+  }
+
   const hotels = await createHotels();
   console.log(`✅ Created hotels`);
 
+  const hotelsWithRooms = hotels.map((h) => ({
+    id: h.id,
+    rooms: new Rooms(h.totalRooms),
+  }));
+
   const guests = await createGuests();
   console.log(`✅ Created guests`);
+
+  const highValueGuestIds: number[] = [];
+
+  for (const _ of range(365)) {
+    // create an array of eligible hotels (at least one room is empty)
+    // create a map (object?) with hotels and the number of empty rooms (this is a count of the number of times the hotel can be used)
+    // determine if we should use a high value customer or next customer
+    // get the next customer ID
+    // determine if it is a high value customer
+  }
+
+  const nextGuestId = getNextGuestId({
+    totalGuests: NUM_GUESTS,
+    useHighValueGuest: useHighValueGuest(
+      NUM_HIGH_VALUE_GUESTS,
+      BASE_HIGH_VALUE_GUEST_PROBABILITY,
+    ),
+    isHighValueGuest: isHighValueGuest(BASE_HIGH_VALUE_GUEST_PROBABILITY),
+  });
+
+  const v2 = true;
+  if (v2) return;
 
   await createBookings(hotels, guests, path);
 
