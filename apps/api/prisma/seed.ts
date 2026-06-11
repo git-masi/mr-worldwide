@@ -25,12 +25,6 @@ import {
   useHighValueGuest,
 } from "./utils";
 
-const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL!,
-});
-
-const prisma = new PrismaClient({ adapter });
-
 const NUM_DAYS_IN_YEAR = 365;
 const NUM_HOTELS = 500;
 const MIN_HOTEL_ROOMS = 10;
@@ -59,18 +53,25 @@ const BOOKINGS_BUFFER = 50_000;
 const postgresUser = process.env.POSTGRES_USER;
 const postgresPassword = process.env.POSTGRES_PASSWORD;
 const postgresDb = process.env.POSTGRES_DB;
+const dbUrl = process.env.DATABASE_URL;
 
-if (!postgresUser || !postgresPassword || !postgresDb) {
+if (!postgresUser || !postgresPassword || !postgresDb || !dbUrl) {
   throw new Error(`Missing one or more env vars`);
 }
 
-const client = new pg.Client({
+const pgClient = new pg.Client({
   host: "localhost",
   port: 5432,
   user: postgresUser,
   password: postgresPassword,
   database: postgresDb,
 });
+
+const adapter = new PrismaPg({
+  connectionString: dbUrl,
+});
+
+const prisma = new PrismaClient({ adapter });
 
 main()
   .catch((e) => {
@@ -80,6 +81,11 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+
+type HotelWithRooms = {
+  id: bigint;
+  rooms: Rooms;
+};
 
 async function main() {
   console.log("🌱 Seeding database...");
@@ -98,7 +104,7 @@ async function main() {
   await prisma.guest.deleteMany();
 
   if (numExistingUsers > 0) {
-    // This is necessary to ensure that our user selection logic works as expected.
+    // Restart user IDs at 1 to ensure user selection works as expected.
     prisma.$executeRawUnsafe(
       `ALTER TABLE guests ALTER COLUMN id RESTART WITH 1;`,
     );
@@ -107,39 +113,130 @@ async function main() {
   const hotels = await createHotels();
   console.log(`✅ Created hotels`);
 
-  const hotelsWithRooms = hotels.map((h) => ({
+  const hotelsWithRooms: HotelWithRooms[] = hotels.map((h) => ({
     id: h.id,
     rooms: new Rooms(h.totalRooms),
   }));
 
-  const guests = await createGuests();
+  await createGuests();
   console.log(`✅ Created guests`);
-
-  const highValueGuestIds: number[] = [];
-
-  for (const _ of range(365)) {
-    // create an array of eligible hotels (at least one room is empty)
-    // create a map (object?) with hotels and the number of empty rooms (this is a count of the number of times the hotel can be used)
-    // determine if we should use a high value customer or next customer
-    // get the next customer ID
-    // determine if it is a high value customer
-  }
 
   const nextGuestId = getNextGuestId({
     totalGuests: NUM_GUESTS,
+    isHighValueGuest: isHighValueGuest(BASE_HIGH_VALUE_GUEST_PROBABILITY),
     useHighValueGuest: useHighValueGuest(
       NUM_HIGH_VALUE_GUESTS,
       BASE_HIGH_VALUE_GUEST_PROBABILITY,
     ),
-    isHighValueGuest: isHighValueGuest(BASE_HIGH_VALUE_GUEST_PROBABILITY),
   });
 
-  const v2 = true;
-  if (v2) return;
+  const now = Temporal.Now.plainDateISO();
 
-  await createBookings(hotels, guests, path);
+  // Open stream to CSV to save bookings
+  const output = createWriteStream(path);
 
-  console.log(`✅ Created bookings`);
+  async function write(chunk: string) {
+    if (!output.write(chunk)) {
+      await once(output, "drain");
+    }
+  }
+
+  await write("hotel_id,guest_id,check_in,check_out\n");
+
+  // Count the bookings so that we have something to look at in the terminal :D
+  let count = 0;
+
+  // Create bookings for 1 year starting from now
+  for (const daysPassed of range(NUM_DAYS_IN_YEAR)) {
+    const currentDate = now.add({ days: daysPassed });
+
+    const { availableHotels, hotelBookingAttemptCount } =
+      getAvailableHotels(hotelsWithRooms);
+    let end = availableHotels.length - 1;
+
+    if (availableHotels.length < 1) {
+      continue;
+    }
+
+    const bookingData: string[] = [];
+
+    while (end >= 0) {
+      const idx = faker.number.int({ min: 0, max: end });
+      const hotel = availableHotels[idx]!;
+      const hotelIdStr = hotel.id.toString();
+
+      hotelBookingAttemptCount[hotelIdStr]! -= 1;
+      if (hotelBookingAttemptCount[hotelIdStr] === 0) {
+        // Swap hotel to end to that it is out of bounds
+        // @ts-ignore
+        [availableHotels[idx], availableHotels[end]] = [
+          availableHotels[end],
+          availableHotels[idx],
+        ];
+        end--;
+      }
+
+      const shouldAddBooking = faker.datatype.boolean({
+        probability: OCCUPANCY_RATE,
+      });
+      if (!shouldAddBooking) {
+        continue;
+      }
+
+      const guestId = nextGuestId();
+      const checkIn = currentDate.toPlainDateTime().toString();
+      const checkOut = currentDate
+        .add({ days: getLengthOfStay() })
+        .toPlainDateTime()
+        .toString();
+
+      bookingData.push(`${hotel.id},${guestId},${checkIn},${checkOut}`);
+    }
+
+    count += bookingData.length;
+    console.log(
+      `Flushing bookings to disk | ${count} of ${APPROXIMATE_BOOKINGS}`,
+    );
+
+    await write(bookingData.join("\n") + "\n");
+    // Reset the array so it can be reused
+    bookingData.length = 0;
+  }
+
+  output.end();
+  await once(output, "finish");
+
+  // ================
+  // Stream CSV to DB
+  // ================
+
+  await pgClient.connect();
+
+  const copyStream = pgClient.query(
+    copyFrom(`
+      COPY bookings (
+        hotel_id,
+        guest_id,
+        check_in,
+        check_out
+      )
+      FROM STDIN
+      WITH (
+        FORMAT csv,
+        HEADER true
+      )
+    `),
+  );
+
+  const fileStream = createReadStream(path);
+
+  await new Promise((res, rej) => {
+    fileStream.pipe(copyStream).on("finish", res).on("error", rej);
+
+    fileStream.on("error", rej);
+  });
+
+  await pgClient.end();
 }
 
 function createHotels() {
@@ -180,10 +277,25 @@ function createGuests() {
     });
   }
 
-  return prisma.guest.createManyAndReturn({
+  return prisma.guest.createMany({
     data: guestData,
-    select: { id: true },
   });
+}
+
+function getAvailableHotels(hotelsWithRooms: HotelWithRooms[]) {
+  const availableHotels: HotelWithRooms[] = [];
+  const hotelBookingAttemptCount: Record<string, number> = {};
+
+  for (const hotel of hotelsWithRooms) {
+    const numRoomsAvailable = hotel.rooms.getNumAvailableRooms();
+
+    if (numRoomsAvailable > 0) {
+      availableHotels.push(hotel);
+      hotelBookingAttemptCount[hotel.id.toString()] = numRoomsAvailable;
+    }
+  }
+
+  return { availableHotels, hotelBookingAttemptCount };
 }
 
 async function createBookings(
@@ -251,9 +363,9 @@ async function createBookings(
   // Stream CSV to DB
   // ================
 
-  await client.connect();
+  await pgClient.connect();
 
-  const copyStream = client.query(
+  const copyStream = pgClient.query(
     copyFrom(`
       COPY bookings (
         hotel_id,
@@ -277,5 +389,5 @@ async function createBookings(
     fileStream.on("error", rej);
   });
 
-  await client.end();
+  await pgClient.end();
 }
