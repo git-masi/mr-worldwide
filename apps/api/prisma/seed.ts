@@ -135,6 +135,8 @@ async function main() {
     );
   }
 
+  await pgClient.connect();
+
   const hotels = await createHotels();
   console.log(`✅ Created hotels`);
 
@@ -149,6 +151,8 @@ async function main() {
 
   await createRecordsFromCsv(bookingsPath, COPY_BOOKINGS_QUERY);
   console.log(`✅ Created bookings`);
+
+  await pgClient.end();
 }
 
 function createHotels() {
@@ -278,8 +282,6 @@ async function createBookingData(
 }
 
 async function createRecordsFromCsv(path: string, query: string) {
-  await pgClient.connect();
-
   const copyStream = pgClient.query(copyFrom(query));
 
   const fileStream = createReadStream(path);
@@ -289,6 +291,4 @@ async function createRecordsFromCsv(path: string, query: string) {
 
     fileStream.on("error", rej);
   });
-
-  await pgClient.end();
 }
