@@ -128,6 +128,7 @@ describe("createBookingsForDate", () => {
 
     for (const daysPassed of range(2)) {
       const currentDate = start.add({ days: daysPassed });
+
       createBookingsForDate({
         currentDate,
         hotelsWithRooms,

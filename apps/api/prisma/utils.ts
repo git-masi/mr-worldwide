@@ -315,8 +315,10 @@ export function createBookingsForDate(config: {
     occupancyRate,
   } = config;
 
-  const { availableHotels, hotelBookingAttemptCount } =
-    getAvailableHotels(hotelsWithRooms);
+  const { availableHotels, hotelBookingAttemptCount } = getAvailableHotels(
+    currentDate,
+    hotelsWithRooms,
+  );
 
   if (availableHotels.length < 1) {
     return;
@@ -358,11 +360,16 @@ export function createBookingsForDate(config: {
   }
 }
 
-function getAvailableHotels(hotelsWithRooms: HotelWithRooms[]) {
+function getAvailableHotels(
+  currentDate: Temporal.PlainDate,
+  hotelsWithRooms: HotelWithRooms[],
+) {
   const availableHotels: HotelWithRooms[] = [];
   const hotelBookingAttemptCount: Record<string, number> = {};
 
   for (const hotel of hotelsWithRooms) {
+    hotel.rooms.vacate(currentDate);
+
     const numRoomsAvailable = hotel.rooms.getNumAvailableRooms();
 
     if (numRoomsAvailable > 0) {
