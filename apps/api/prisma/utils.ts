@@ -331,3 +331,44 @@ export function getRandomCustomer(customers: { id: bigint }[]) {
     return customer;
   };
 }
+
+export function getRandomCustomerId(config: {
+  totalCustomers: number;
+  numHighValueCustomers: number;
+  highValueCustomerProbability: number;
+}): () => bigint {
+  const {
+    totalCustomers,
+    numHighValueCustomers,
+    highValueCustomerProbability,
+  } = config;
+
+  const customerIds = Array.from({ length: totalCustomers }).map(
+    (_, i) => i + 1,
+  );
+
+  faker.helpers.shuffle(customerIds, { inplace: true });
+
+  const highValueCustomerIds = customerIds.splice(0, numHighValueCustomers);
+
+  const size = customerIds.length - 1;
+  let end = size;
+
+  return () => {
+    if (faker.datatype.boolean({ probability: highValueCustomerProbability })) {
+      const customerId = faker.helpers.arrayElement(highValueCustomerIds);
+
+      return BigInt(customerId);
+    }
+
+    const customerId = customerIds[faker.number.int(end)]!;
+
+    end--;
+
+    if (end < 0) {
+      end = size;
+    }
+
+    return BigInt(customerId);
+  };
+}
