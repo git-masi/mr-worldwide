@@ -351,10 +351,10 @@ export function createBookingsForDate(config: {
 
     const guestId = nextGuestId();
     const checkIn = currentDate.toPlainDateTime().toString();
-    const checkOut = currentDate
-      .add({ days: getLengthOfStay() })
-      .toPlainDateTime()
-      .toString();
+    const futureDate = currentDate.add({ days: getLengthOfStay() });
+    const checkOut = futureDate.toPlainDateTime().toString();
+
+    hotel.rooms.occupy(futureDate);
 
     bookingData.push(`${hotel.id},${guestId},${checkIn},${checkOut}`);
   }

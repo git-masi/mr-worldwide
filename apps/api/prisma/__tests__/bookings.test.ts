@@ -6,9 +6,8 @@ import { range } from "@repo/numbers/range";
 describe("createBookingsForDate", () => {
   test("create one booking", { timeout: 1000 }, () => {
     const currentDate = Temporal.PlainDate.from("2026-01-01");
-    const hotelsWithRooms = [
-      { id: BigInt(1), totalRooms: 1, rooms: new Rooms(1) },
-    ];
+    const rooms = new Rooms(1);
+    const hotelsWithRooms = [{ id: BigInt(1), totalRooms: 1, rooms }];
     const nextGuestId = () => 1;
     const bookingData: string[] = [];
     const occupancyRate = 1;
@@ -24,6 +23,8 @@ describe("createBookingsForDate", () => {
     expect(bookingData).toHaveLength(1);
 
     expect(bookingData[0]).toContain(`1,1,2026-01-01`);
+
+    expect(rooms.getNumAvailableRooms()).toEqual(0);
   });
 
   test("create two bookings", { timeout: 1000 }, () => {
