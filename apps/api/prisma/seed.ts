@@ -19,7 +19,7 @@ import {
   getCreatedAtDate,
   getHotelName,
   getLengthOfStay,
-  getRandomCustomer,
+  getRandomGuest,
 } from "./utils";
 
 const adapter = new PrismaPg({
@@ -38,7 +38,7 @@ const OCCUPANCY_RATE = 0.7;
 // (10×1+15×2+25×3+20×4+20×5+5×6+5×7) / (10+15+25+20+20+5+5)
 const WEIGHTED_AVERAGE_NIGHTS = 3.6;
 // We use a formula to estimate the number of bookings we will have.
-// This is useful for determining how many customers we will need.
+// This is useful for determining how many guests we will need.
 // (500 * 55 * 365 * .7) / 3.6 = 1,951,736
 // From experience the number of bookings produced is closer to 2.4 million
 const APPROXIMATE_BOOKINGS =
@@ -47,8 +47,8 @@ const APPROXIMATE_BOOKINGS =
     NUM_DAYS_IN_YEAR *
     OCCUPANCY_RATE) /
   WEIGHTED_AVERAGE_NIGHTS;
-// Calculate number of customers based on expected bookings to ensure a large pool available
-const NUM_CUSTOMERS = APPROXIMATE_BOOKINGS / 2;
+// Calculate number of guests based on expected bookings to ensure a large pool available
+const NUM_GUESTS = APPROXIMATE_BOOKINGS / 2;
 const BOOKINGS_BUFFER = 50_000;
 
 // This allows `BigInt` values to be serialized using `JSON.stringify`.
@@ -95,15 +95,15 @@ async function main() {
 
   await prisma.booking.deleteMany();
   await prisma.hotel.deleteMany();
-  await prisma.customer.deleteMany();
+  await prisma.guest.deleteMany();
 
   const hotels = await createHotels();
   console.log(`✅ Created hotels`);
 
-  const customers = await createCustomers();
-  console.log(`✅ Created customers`);
+  const guests = await createGuests();
+  console.log(`✅ Created guests`);
 
-  await createBookings(hotels, customers, path);
+  await createBookings(hotels, guests, path);
 
   console.log(`✅ Created bookings`);
 }
@@ -128,14 +128,14 @@ function createHotels() {
   });
 }
 
-function createCustomers() {
-  const customerData: Prisma.CustomerCreateManyInput[] = [];
+function createGuests() {
+  const guestData: Prisma.GuestCreateManyInput[] = [];
 
-  for (const _ of range(NUM_CUSTOMERS)) {
+  for (const _ of range(NUM_GUESTS)) {
     const firstName = faker.person.firstName();
     const lastName = faker.person.lastName();
 
-    customerData.push({
+    guestData.push({
       firstName,
       lastName,
       // If this does not provide enough randomness add another random number to the end of the last name.
@@ -146,15 +146,15 @@ function createCustomers() {
     });
   }
 
-  return prisma.customer.createManyAndReturn({
-    data: customerData,
+  return prisma.guest.createManyAndReturn({
+    data: guestData,
     select: { id: true },
   });
 }
 
 async function createBookings(
   hotels: { id: bigint; totalRooms: number }[],
-  customers: { id: bigint }[],
+  guests: { id: bigint }[],
   path: string,
 ) {
   const now = Temporal.Now.plainDateISO();
@@ -162,8 +162,8 @@ async function createBookings(
   // Add a new booking 70% of the time for all hotels.
   const shouldAddBooking = () =>
     faker.datatype.boolean({ probability: OCCUPANCY_RATE });
-  // Use the same random customer function across all hotels.
-  const getCustomer = getRandomCustomer(customers);
+  // Use the same random guest function across all hotels.
+  const getGuest = getRandomGuest(guests);
 
   // =====================
   // Write bookings to CSV
@@ -177,7 +177,7 @@ async function createBookings(
     }
   }
 
-  await write("hotel_id,customer_id,created_at,check_in,check_out\n");
+  await write("hotel_id,guest_id,created_at,check_in,check_out\n");
 
   let bookingData: string[] = [];
   let count = 0;
@@ -192,11 +192,11 @@ async function createBookings(
       hotel,
       shouldAddBooking,
       getLengthOfStay,
-      getCustomer,
+      getGuest,
       getCreatedAt,
     }).forEach((booking) => {
       bookingData.push(
-        `${booking.hotelId},${booking.customerId},${booking.createdAt},${booking.checkIn},${booking.checkOut}`,
+        `${booking.hotelId},${booking.guestId},${booking.createdAt},${booking.checkIn},${booking.checkOut}`,
       );
     });
 
@@ -227,7 +227,7 @@ async function createBookings(
     copyFrom(`
       COPY bookings (
         hotel_id,
-        customer_id,
+        guest_id,
         created_at,
         check_in,
         check_out

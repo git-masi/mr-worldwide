@@ -89,7 +89,7 @@ export function createBookingData(config: {
   hotel: { id: bigint; totalRooms: number };
   shouldAddBooking: () => boolean;
   getLengthOfStay: () => number;
-  getCustomer: () => { id: bigint };
+  getGuest: () => { id: bigint };
   getCreatedAt: (currentDate: Temporal.PlainDate) => Temporal.PlainDate;
 }) {
   const {
@@ -98,7 +98,7 @@ export function createBookingData(config: {
     hotel,
     shouldAddBooking,
     getLengthOfStay,
-    getCustomer,
+    getGuest,
     getCreatedAt,
   } = config;
 
@@ -118,8 +118,8 @@ export function createBookingData(config: {
         continue;
       }
 
-      // Get a random customer
-      const customer = getCustomer();
+      // Get a random guest
+      const guest = getGuest();
 
       const createdAt = getCreatedAt(currentDate);
 
@@ -129,7 +129,7 @@ export function createBookingData(config: {
       // Add booking data to save to DB
       bookingData.push({
         hotelId: hotel.id,
-        customerId: customer.id,
+        guestId: guest.id,
         createdAt: createdAt.toPlainDateTime().toString(),
         checkIn: currentDate.toPlainDateTime().toString(),
         checkOut: checkOut.toPlainDateTime().toString(),
@@ -300,27 +300,27 @@ export function getCreatedAtDate(start: Temporal.PlainDate) {
   };
 }
 
-// Randomly select a customer **without replacement**.
+// Randomly select a guest **without replacement**.
 // This function mutates the input array.
-// With a large enough array of customers there is a greatly reduced chance of customers
+// With a large enough array of guests there is a greatly reduced chance of guests
 // booking at two different hotels on the same day.
-export function getRandomCustomer(customers: { id: bigint }[]) {
-  const size = customers.length - 1;
+export function getRandomGuest(guests: { id: bigint }[]) {
+  const size = guests.length - 1;
   let end = size;
 
-  // The window of available customers is from 0 to `end`.
-  // When a customer is selected it is swapped to the `end` and `end` is decremented
+  // The window of available guests is from 0 to `end`.
+  // When a guest is selected it is swapped to the `end` and `end` is decremented
   // which decreases the size of the window.
-  // After all the customers have been selected at least once reset the window and
+  // After all the guests have been selected at least once reset the window and
   // start again.
   return () => {
     const idx = faker.number.int(end);
 
-    const customer = customers[idx]!;
+    const guest = guests[idx]!;
 
     // Swap elements
     // @ts-ignore
-    [customers[idx], customers[end]] = [customers[end], customers[idx]];
+    [guests[idx], guests[end]] = [guests[end], guests[idx]];
 
     end--;
 
@@ -328,40 +328,40 @@ export function getRandomCustomer(customers: { id: bigint }[]) {
       end = size;
     }
 
-    return customer;
+    return guest;
   };
 }
 
-export function getRandomCustomerId(config: {
-  totalCustomers: number;
-  numHighValueCustomers: number;
-  highValueCustomerProbability: number;
+export function getRandomGuestId(config: {
+  totalGuests: number;
+  numHighValueGuests: number;
+  highValueGuestProbability: number;
 }): () => bigint {
   const {
-    totalCustomers,
-    numHighValueCustomers,
-    highValueCustomerProbability,
+    totalGuests,
+    numHighValueGuests,
+    highValueGuestProbability,
   } = config;
 
-  const customerIds = Array.from({ length: totalCustomers }).map(
+  const guestIds = Array.from({ length: totalGuests }).map(
     (_, i) => i + 1,
   );
 
-  faker.helpers.shuffle(customerIds, { inplace: true });
+  faker.helpers.shuffle(guestIds, { inplace: true });
 
-  const highValueCustomerIds = customerIds.splice(0, numHighValueCustomers);
+  const highValueGuestIds = guestIds.splice(0, numHighValueGuests);
 
-  const size = customerIds.length - 1;
+  const size = guestIds.length - 1;
   let end = size;
 
   return () => {
-    if (faker.datatype.boolean({ probability: highValueCustomerProbability })) {
-      const customerId = faker.helpers.arrayElement(highValueCustomerIds);
+    if (faker.datatype.boolean({ probability: highValueGuestProbability })) {
+      const guestId = faker.helpers.arrayElement(highValueGuestIds);
 
-      return BigInt(customerId);
+      return BigInt(guestId);
     }
 
-    const customerId = customerIds[faker.number.int(end)]!;
+    const guestId = guestIds[faker.number.int(end)]!;
 
     end--;
 
@@ -369,6 +369,6 @@ export function getRandomCustomerId(config: {
       end = size;
     }
 
-    return BigInt(customerId);
+    return BigInt(guestId);
   };
 }

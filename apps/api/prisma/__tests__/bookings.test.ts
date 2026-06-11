@@ -6,11 +6,11 @@ describe("createBookingData", () => {
   test("create one booking", () => {
     const now = Temporal.Now.plainDateISO();
     const hotelId = BigInt(1);
-    const customerId = BigInt(1);
+    const guestId = BigInt(1);
     const shouldAddBooking = () => true;
     const getLengthOfStay = () => 1;
-    const getCustomer = () => ({
-      id: customerId,
+    const getGuest = () => ({
+      id: guestId,
     });
     const getCreatedAt = () => now;
 
@@ -20,7 +20,7 @@ describe("createBookingData", () => {
       hotel: { id: hotelId, totalRooms: 1 },
       shouldAddBooking,
       getLengthOfStay,
-      getCustomer,
+      getGuest,
       getCreatedAt,
     });
 
@@ -28,7 +28,7 @@ describe("createBookingData", () => {
 
     expect(bookingData[0]).toMatchObject({
       hotelId,
-      customerId,
+      guestId,
       checkIn: now.toPlainDateTime().toString(),
     });
   });
@@ -37,11 +37,11 @@ describe("createBookingData", () => {
     const now = Temporal.Now.plainDateISO();
     const end = now.add({ days: 2 });
     const hotelId = BigInt(1);
-    const customerId = BigInt(1);
+    const guestId = BigInt(1);
     const shouldAddBooking = () => true;
     const getLengthOfStay = () => 1;
-    const getCustomer = () => ({
-      id: customerId,
+    const getGuest = () => ({
+      id: guestId,
     });
     const getCreatedAt = () => now;
 
@@ -51,7 +51,7 @@ describe("createBookingData", () => {
       hotel: { id: hotelId, totalRooms: 1 },
       shouldAddBooking,
       getLengthOfStay,
-      getCustomer,
+      getGuest,
       getCreatedAt,
     });
 
@@ -60,17 +60,17 @@ describe("createBookingData", () => {
     expect(bookingData).toMatchObject([
       {
         hotelId,
-        customerId,
+        guestId,
         checkIn: now.toPlainDateTime().toString(),
       },
       {
         hotelId,
-        customerId,
+        guestId,
         checkIn: now.add({ days: 1 }).toPlainDateTime().toString(),
       },
       {
         hotelId,
-        customerId,
+        guestId,
         checkIn: now.add({ days: 2 }).toPlainDateTime().toString(),
       },
     ]);
@@ -82,11 +82,11 @@ describe("createBookingData", () => {
     const now = Temporal.Now.plainDateISO();
     const end = now.add({ days: 2 });
     const hotelId = BigInt(1);
-    const customerId = BigInt(1);
+    const guestId = BigInt(1);
     const shouldAddBooking = () => true;
     const getLengthOfStay = () => 2;
-    const getCustomer = () => ({
-      id: customerId,
+    const getGuest = () => ({
+      id: guestId,
     });
     const getCreatedAt = () => now;
 
@@ -96,7 +96,7 @@ describe("createBookingData", () => {
       hotel: { id: hotelId, totalRooms: 1 },
       shouldAddBooking,
       getLengthOfStay,
-      getCustomer,
+      getGuest,
       getCreatedAt,
     });
 
@@ -105,12 +105,12 @@ describe("createBookingData", () => {
     expect(bookingData).toMatchObject([
       {
         hotelId,
-        customerId,
+        guestId,
         checkIn: now.toPlainDateTime().toString(),
       },
       {
         hotelId,
-        customerId,
+        guestId,
         checkIn: now.add({ days: 2 }).toPlainDateTime().toString(),
       },
     ]);
@@ -120,16 +120,16 @@ describe("createBookingData", () => {
     const now = Temporal.Now.plainDateISO();
     const end = now.add({ days: 2 });
     const hotelId = BigInt(1);
-    const customerId1 = BigInt(1);
-    const customerId2 = BigInt(2);
+    const guestId1 = BigInt(1);
+    const guestId2 = BigInt(2);
     const shouldAddBooking = () => true;
     const getLengthOfStay = () => 3;
-    const getCustomer = (() => {
+    const getGuest = (() => {
       let callCount = 0;
 
       return () => {
         const data = {
-          id: callCount % 2 === 0 ? customerId1 : customerId2,
+          id: callCount % 2 === 0 ? guestId1 : guestId2,
         };
 
         callCount++;
@@ -145,7 +145,7 @@ describe("createBookingData", () => {
       hotel: { id: hotelId, totalRooms: 2 },
       shouldAddBooking,
       getLengthOfStay,
-      getCustomer,
+      getGuest,
       getCreatedAt,
     });
 
@@ -154,12 +154,12 @@ describe("createBookingData", () => {
     expect(bookingData).toMatchObject([
       {
         hotelId,
-        customerId: customerId1,
+        guestId: guestId1,
         checkIn: now.toPlainDateTime().toString(),
       },
       {
         hotelId,
-        customerId: customerId2,
+        guestId: guestId2,
         checkIn: now.toPlainDateTime().toString(),
       },
     ]);
