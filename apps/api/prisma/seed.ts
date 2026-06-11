@@ -16,11 +16,12 @@ import { from as copyFrom } from "pg-copy-streams";
 
 import {
   getHotelName,
-  getLengthOfStay,
+  createBookingsForDate,
   getNextGuestId,
   isHighValueGuest,
   Rooms,
   useHighValueGuest,
+  type HotelWithRooms,
 } from "./utils";
 
 const NUM_DAYS_IN_YEAR = 365;
@@ -108,11 +109,6 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-
-type HotelWithRooms = {
-  id: bigint;
-  rooms: Rooms;
-};
 
 async function main() {
   console.log("🌱 Seeding database...");
@@ -258,12 +254,13 @@ async function createBookingData(
   for (const daysPassed of range(NUM_DAYS_IN_YEAR)) {
     const currentDate = now.add({ days: daysPassed });
 
-    await createBookingsForDate(
+    await createBookingsForDate({
       currentDate,
       hotelsWithRooms,
       nextGuestId,
       bookingData,
-    );
+      occupancyRate: OCCUPANCY_RATE,
+    });
 
     count += bookingData.length;
     console.log(
@@ -276,71 +273,6 @@ async function createBookingData(
   }
 
   end();
-}
-
-async function createBookingsForDate(
-  currentDate: Temporal.PlainDate,
-  hotelsWithRooms: HotelWithRooms[],
-  nextGuestId: () => number,
-  bookingData: string[],
-) {
-  const { availableHotels, hotelBookingAttemptCount } =
-    getAvailableHotels(hotelsWithRooms);
-
-  if (availableHotels.length < 1) {
-    return;
-  }
-
-  let end = availableHotels.length - 1;
-
-  while (end >= 0) {
-    const idx = faker.number.int({ min: 0, max: end });
-    const hotel = availableHotels[idx]!;
-    const hotelIdStr = hotel.id.toString();
-
-    hotelBookingAttemptCount[hotelIdStr]! -= 1;
-    if (hotelBookingAttemptCount[hotelIdStr] === 0) {
-      // Swap hotel to end to that it is out of bounds
-      // @ts-ignore
-      [availableHotels[idx], availableHotels[end]] = [
-        availableHotels[end],
-        availableHotels[idx],
-      ];
-      end--;
-    }
-
-    const shouldAddBooking = faker.datatype.boolean({
-      probability: OCCUPANCY_RATE,
-    });
-    if (!shouldAddBooking) {
-      continue;
-    }
-
-    const guestId = nextGuestId();
-    const checkIn = currentDate.toPlainDateTime().toString();
-    const checkOut = currentDate
-      .add({ days: getLengthOfStay() })
-      .toPlainDateTime()
-      .toString();
-
-    bookingData.push(`${hotel.id},${guestId},${checkIn},${checkOut}`);
-  }
-}
-
-function getAvailableHotels(hotelsWithRooms: HotelWithRooms[]) {
-  const availableHotels: HotelWithRooms[] = [];
-  const hotelBookingAttemptCount: Record<string, number> = {};
-
-  for (const hotel of hotelsWithRooms) {
-    const numRoomsAvailable = hotel.rooms.getNumAvailableRooms();
-
-    if (numRoomsAvailable > 0) {
-      availableHotels.push(hotel);
-      hotelBookingAttemptCount[hotel.id.toString()] = numRoomsAvailable;
-    }
-  }
-
-  return { availableHotels, hotelBookingAttemptCount };
 }
 
 async function createRecordsFromCsv(path: string, query: string) {

@@ -20,7 +20,6 @@ import { MinHeap } from "@datastructures-js/heap";
 import { faker } from "@faker-js/faker";
 import { range } from "@repo/numbers/range";
 import { Temporal } from "temporal-polyfill"; // Technically not needed for node v26
-import { BookingCreateManyInput } from "./generated/models";
 
 type Checkout = { checkOut: string };
 
@@ -66,6 +65,11 @@ export class Rooms {
   }
 }
 
+export type HotelWithRooms = {
+  id: bigint;
+  rooms: Rooms;
+};
+
 const weightedLengthOfStay = [
   // To make this easier to reason about the weights add up to 100 so that
   // each weight has an x/100 chance of being selected.
@@ -81,57 +85,6 @@ const weightedLengthOfStay = [
 export function getLengthOfStay(): number {
   // Get a random weighted number of nights for the stay
   return faker.helpers.weightedArrayElement(weightedLengthOfStay);
-}
-
-export function createBookingData(config: {
-  start: Temporal.PlainDate;
-  end: Temporal.PlainDate;
-  hotel: { id: bigint; totalRooms: number };
-  shouldAddBooking: () => boolean;
-  getLengthOfStay: () => number;
-  getGuest: () => { id: bigint };
-}) {
-  const { start, end, hotel, shouldAddBooking, getLengthOfStay, getGuest } =
-    config;
-
-  const bookingData: BookingCreateManyInput[] = [];
-
-  const rooms = new Rooms(hotel.totalRooms);
-
-  let currentDate = start;
-
-  // Loop through each date from the current date to one year from now
-  while (Temporal.PlainDate.compare(currentDate, end) <= 0) {
-    // Free up rooms where the occupant is checking out on `currentDate`
-    rooms.vacate(currentDate);
-
-    for (const _ of range(rooms.getNumAvailableRooms())) {
-      if (!shouldAddBooking()) {
-        continue;
-      }
-
-      // Get a random guest
-      const guest = getGuest();
-
-      // Add the number of nights to the current date to get the check out date
-      const checkOut = currentDate.add({ days: getLengthOfStay() });
-
-      // Add booking data to save to DB
-      bookingData.push({
-        hotelId: hotel.id,
-        guestId: guest.id,
-        checkIn: currentDate.toPlainDateTime().toString(),
-        checkOut: checkOut.toPlainDateTime().toString(),
-      });
-
-      // Mark room as taken
-      rooms.occupy(checkOut);
-    }
-
-    currentDate = currentDate.add({ days: 1 });
-  }
-
-  return bookingData;
 }
 
 const hotelNames = [
@@ -246,38 +199,6 @@ export function getHotelName(): string {
   return `${name} ${location}`;
 }
 
-// Randomly select a guest **without replacement**.
-// This function mutates the input array.
-// With a large enough array of guests there is a greatly reduced chance of guests
-// booking at two different hotels on the same day.
-export function getRandomGuest(guests: { id: bigint }[]) {
-  const size = guests.length - 1;
-  let end = size;
-
-  // The window of available guests is from 0 to `end`.
-  // When a guest is selected it is swapped to the `end` and `end` is decremented
-  // which decreases the size of the window.
-  // After all the guests have been selected at least once reset the window and
-  // start again.
-  return () => {
-    const idx = faker.number.int(end);
-
-    const guest = guests[idx]!;
-
-    // Swap elements
-    // @ts-ignore
-    [guests[idx], guests[end]] = [guests[end], guests[idx]];
-
-    end--;
-
-    if (end < 0) {
-      end = size;
-    }
-
-    return guest;
-  };
-}
-
 export function getRandomGuestId(config: {
   totalGuests: number;
   numHighValueGuests: number;
@@ -377,4 +298,78 @@ export function isHighValueGuest(
   highValueGuestProbability: number,
 ): () => boolean {
   return () => faker.datatype.boolean(highValueGuestProbability);
+}
+
+export async function createBookingsForDate(config: {
+  currentDate: Temporal.PlainDate;
+  hotelsWithRooms: HotelWithRooms[];
+  nextGuestId: () => number;
+  bookingData: string[];
+  occupancyRate: number;
+}) {
+  const {
+    currentDate,
+    hotelsWithRooms,
+    nextGuestId,
+    bookingData,
+    occupancyRate,
+  } = config;
+
+  const { availableHotels, hotelBookingAttemptCount } =
+    getAvailableHotels(hotelsWithRooms);
+
+  if (availableHotels.length < 1) {
+    return;
+  }
+
+  let end = availableHotels.length - 1;
+
+  while (end >= 0) {
+    const idx = faker.number.int({ min: 0, max: end });
+    const hotel = availableHotels[idx]!;
+    const hotelIdStr = hotel.id.toString();
+
+    hotelBookingAttemptCount[hotelIdStr]! -= 1;
+    if (hotelBookingAttemptCount[hotelIdStr] === 0) {
+      // Swap hotel to end to that it is out of bounds
+      // @ts-ignore
+      [availableHotels[idx], availableHotels[end]] = [
+        availableHotels[end],
+        availableHotels[idx],
+      ];
+      end--;
+    }
+
+    const shouldAddBooking = faker.datatype.boolean({
+      probability: occupancyRate,
+    });
+    if (!shouldAddBooking) {
+      continue;
+    }
+
+    const guestId = nextGuestId();
+    const checkIn = currentDate.toPlainDateTime().toString();
+    const checkOut = currentDate
+      .add({ days: getLengthOfStay() })
+      .toPlainDateTime()
+      .toString();
+
+    bookingData.push(`${hotel.id},${guestId},${checkIn},${checkOut}`);
+  }
+}
+
+function getAvailableHotels(hotelsWithRooms: HotelWithRooms[]) {
+  const availableHotels: HotelWithRooms[] = [];
+  const hotelBookingAttemptCount: Record<string, number> = {};
+
+  for (const hotel of hotelsWithRooms) {
+    const numRoomsAvailable = hotel.rooms.getNumAvailableRooms();
+
+    if (numRoomsAvailable > 0) {
+      availableHotels.push(hotel);
+      hotelBookingAttemptCount[hotel.id.toString()] = numRoomsAvailable;
+    }
+  }
+
+  return { availableHotels, hotelBookingAttemptCount };
 }
