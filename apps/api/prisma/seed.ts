@@ -28,7 +28,9 @@ const NUM_DAYS_IN_YEAR = 365;
 const NUM_HOTELS = 500;
 const MIN_HOTEL_ROOMS = 10;
 const MAX_HOTEL_ROOMS = 100;
-const APPROXIMATE_AVERAGE_HOTEL_ROOMS = (MAX_HOTEL_ROOMS + MIN_HOTEL_ROOMS) / 2;
+const APPROXIMATE_AVERAGE_HOTEL_ROOMS = Math.ceil(
+  (MAX_HOTEL_ROOMS + MIN_HOTEL_ROOMS) / 2,
+);
 const OCCUPANCY_RATE = 0.7;
 // sum of each length of stay * it's weight / sum of weights
 // (10×1+15×2+25×3+20×4+20×5+5×6+5×7) / (10+15+25+20+20+5+5)
@@ -37,14 +39,15 @@ const WEIGHTED_AVERAGE_NIGHTS = 3.6;
 // This is useful for determining how many guests we will need.
 // (500 * 55 * 365 * .7) / 3.6 = 1,951,736
 // From experience the number of bookings produced is closer to 2.4 million
-const APPROXIMATE_BOOKINGS =
+const APPROXIMATE_BOOKINGS = Math.ceil(
   (NUM_HOTELS *
     APPROXIMATE_AVERAGE_HOTEL_ROOMS *
     NUM_DAYS_IN_YEAR *
     OCCUPANCY_RATE) /
-  WEIGHTED_AVERAGE_NIGHTS;
+    WEIGHTED_AVERAGE_NIGHTS,
+);
 // Calculate number of guests based on expected bookings to ensure a large pool available
-const NUM_GUESTS = APPROXIMATE_BOOKINGS / 2;
+const NUM_GUESTS = Math.ceil(APPROXIMATE_BOOKINGS / 2);
 const BASE_HIGH_VALUE_GUEST_PROBABILITY = 0.05;
 const NUM_HIGH_VALUE_GUESTS = NUM_GUESTS * BASE_HIGH_VALUE_GUEST_PROBABILITY;
 
