@@ -89,7 +89,8 @@ async function main() {
   console.log("🌱 Seeding database...");
 
   const dir = "./temp";
-  const path = `${dir}/bookings.csv`;
+  const guestsPath = `${dir}/guests.csv`;
+  const bookingsPath = `${dir}/bookings.csv`;
 
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });
@@ -111,13 +112,45 @@ async function main() {
   const hotels = await createHotels();
   console.log(`✅ Created hotels`);
 
-  await createGuests();
+  await createGuestData(guestsPath);
+  console.log(`✅ Created guests data`);
+
+  createRecordsFromCsv(
+    guestsPath,
+    `
+      COPY guests (
+        first_name,
+        last_name,
+        email
+      )
+      FROM STDIN
+      WITH (
+        FORMAT csv,
+        HEADER true
+      )
+    `,
+  );
   console.log(`✅ Created guests`);
 
-  await createBookingData(path, hotels);
+  await createBookingData(bookingsPath, hotels);
   console.log(`✅ Created booking data`);
 
-  await createBookings(path);
+  await createRecordsFromCsv(
+    bookingsPath,
+    `
+      COPY bookings (
+        hotel_id,
+        guest_id,
+        check_in,
+        check_out
+      )
+      FROM STDIN
+      WITH (
+        FORMAT csv,
+        HEADER true
+      )
+    `,
+  );
   console.log(`✅ Created bookings`);
 }
 
@@ -141,27 +174,44 @@ function createHotels() {
   });
 }
 
-function createGuests() {
-  const guestData: Prisma.GuestCreateManyInput[] = [];
+async function createGuestData(path: string) {
+  // Open stream to CSV to save guests
+  const output = createWriteStream(path);
+
+  async function write(chunk: string) {
+    if (!output.write(chunk)) {
+      await once(output, "drain");
+    }
+  }
+
+  // Write CSV header
+  await write("first_name,last_name,email\n");
+
+  const guestData: string[] = [];
+  // Count the guests so that we have something to look at in the terminal :D
+  let count = 0;
 
   for (const _ of range(NUM_GUESTS)) {
     const firstName = faker.person.firstName();
     const lastName = faker.person.lastName();
-
-    guestData.push({
+    const email = faker.internet.email({
       firstName,
       lastName,
-      // If this does not provide enough randomness add another random number to the end of the last name.
-      email: faker.internet.email({
-        firstName,
-        lastName,
-      }),
     });
+
+    count++;
+    guestData.push(`${firstName},${lastName},${email}`);
+
+    if (guestData.length > 10_000) {
+      console.log(`Flushing guests to disk | ${count} of ${NUM_GUESTS}`);
+      await write(guestData.join("\n") + "\n");
+      // Reset the array so it can be reused
+      guestData.length = 0;
+    }
   }
 
-  return prisma.guest.createMany({
-    data: guestData,
-  });
+  output.end();
+  await once(output, "finish");
 }
 
 async function createBookingData(
@@ -290,24 +340,10 @@ function getAvailableHotels(hotelsWithRooms: HotelWithRooms[]) {
   return { availableHotels, hotelBookingAttemptCount };
 }
 
-async function createBookings(path: string) {
+async function createRecordsFromCsv(path: string, query: string) {
   await pgClient.connect();
 
-  const copyStream = pgClient.query(
-    copyFrom(`
-      COPY bookings (
-        hotel_id,
-        guest_id,
-        check_in,
-        check_out
-      )
-      FROM STDIN
-      WITH (
-        FORMAT csv,
-        HEADER true
-      )
-    `),
-  );
+  const copyStream = pgClient.query(copyFrom(query));
 
   const fileStream = createReadStream(path);
 
@@ -319,97 +355,3 @@ async function createBookings(path: string) {
 
   await pgClient.end();
 }
-
-// async function createBookings(
-//   hotels: { id: bigint; totalRooms: number }[],
-//   guests: { id: bigint }[],
-//   path: string,
-// ) {
-//   const now = Temporal.Now.plainDateISO();
-//   const oneYearFromNow = now.add({ years: 1 });
-//   // Add a new booking 70% of the time for all hotels.
-//   const shouldAddBooking = () =>
-//     faker.datatype.boolean({ probability: OCCUPANCY_RATE });
-//   // Use the same random guest function across all hotels.
-//   const getGuest = getRandomGuest(guests);
-
-//   // =====================
-//   // Write bookings to CSV
-//   // =====================
-
-//   const output = createWriteStream(path);
-
-//   async function write(chunk: string) {
-//     if (!output.write(chunk)) {
-//       await once(output, "drain");
-//     }
-//   }
-
-//   await write("hotel_id,guest_id,check_in,check_out\n");
-
-//   let bookingData: string[] = [];
-//   let count = 0;
-
-//   for (const hotel of hotels) {
-//     createBookingData({
-//       start: now,
-//       end: oneYearFromNow,
-//       hotel,
-//       shouldAddBooking,
-//       getLengthOfStay,
-//       getGuest,
-//     }).forEach((booking) => {
-//       bookingData.push(
-//         `${booking.hotelId},${booking.guestId},${booking.checkIn},${booking.checkOut}`,
-//       );
-//     });
-
-//     if (bookingData.length > BOOKINGS_BUFFER) {
-//       count += bookingData.length;
-//       console.log(
-//         `Flushing bookings to disk | ${count} of ${APPROXIMATE_BOOKINGS}`,
-//       );
-//       await write(bookingData.join("\n") + "\n");
-//       // Reset the array so it can be reused
-//       bookingData.length = 0;
-//     }
-//   }
-
-//   output.end();
-
-//   await once(output, "finish");
-
-//   console.log("Finished writing bookings to CSV");
-
-//   // ================
-//   // Stream CSV to DB
-//   // ================
-
-//   await pgClient.connect();
-
-//   const copyStream = pgClient.query(
-//     copyFrom(`
-//       COPY bookings (
-//         hotel_id,
-//         guest_id,
-//         check_in,
-//         check_out
-//       )
-//       FROM STDIN
-//       WITH (
-//         FORMAT csv,
-//         HEADER true
-//       )
-//     `),
-//   );
-
-//   const fileStream = createReadStream(path);
-
-//   await new Promise((res, rej) => {
-//     fileStream.pipe(copyStream).on("finish", res).on("error", rej);
-
-//     fileStream.on("error", rej);
-//   });
-
-//   await pgClient.end();
-// }
