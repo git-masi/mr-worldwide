@@ -17,22 +17,22 @@ model Hotel {
 }
 
 model Booking {
-  id         BigInt   @id @default(autoincrement())
-  hotelId    BigInt   @map("hotel_id")
-  customerId BigInt   @map("customer_id")
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
-  checkIn    DateTime @map("check_in") @db.Timestamptz
-  checkOut   DateTime @map("check_out") @db.Timestamptz
+  id        BigInt   @id @default(autoincrement())
+  hotelId   BigInt   @map("hotel_id")
+  guestId   BigInt   @map("guest_id")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  checkIn   DateTime @map("check_in") @db.Timestamptz
+  checkOut  DateTime @map("check_out") @db.Timestamptz
 
-  hotel    Hotel    @relation(fields: [hotelId], references: [id])
-  customer Customer @relation(fields: [customerId], references: [id])
+  hotel Hotel @relation(fields: [hotelId], references: [id])
+  guest Guest @relation(fields: [guestId], references: [id])
 
   @@map("bookings")
 }
 
-// You can imagine that some customers are users of the application but not all users are customers.
+// You can imagine that some guests are users of the application but not all users are guests.
 // This enables a "check out as guest" workflow.
-model Customer {
+model Guest {
   id        BigInt    @id @default(autoincrement())
   firstName String    @map("first_name")
   lastName  String    @map("last_name")
@@ -40,5 +40,5 @@ model Customer {
   bookings  Booking[]
   // Add nullable user ID if/when users are added in the future.
 
-  @@map("customers")
+  @@map("guests")
 }
