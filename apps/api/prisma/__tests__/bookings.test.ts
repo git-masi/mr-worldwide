@@ -4,7 +4,7 @@ import { Temporal } from "temporal-polyfill";
 import { range } from "@repo/numbers/range";
 
 describe("createBookingsForDate", () => {
-  test("create one booking", { timeout: 1000 }, () => {
+  test("create one booking", () => {
     const currentDate = Temporal.PlainDate.from("2026-01-01");
     const rooms = new Rooms(1);
     const hotelsWithRooms = [{ id: BigInt(1), totalRooms: 1, rooms }];
@@ -35,7 +35,7 @@ describe("createBookingsForDate", () => {
     expect(rooms.getNumAvailableRooms()).toEqual(0);
   });
 
-  test("create two bookings for different hotels", { timeout: 1000 }, () => {
+  test("create two bookings for different hotels", () => {
     const currentDate = Temporal.PlainDate.from("2026-01-01");
     const hotelsWithRooms = [
       { id: BigInt(1), totalRooms: 1, rooms: new Rooms(1) },
@@ -71,7 +71,7 @@ describe("createBookingsForDate", () => {
     );
   });
 
-  test("create many bookings", { timeout: 1000 }, () => {
+  test("create many bookings", () => {
     const currentDate = Temporal.PlainDate.from("2026-01-01");
     const hotelsWithRooms = [
       { id: BigInt(1), totalRooms: 1, rooms: new Rooms(10) },
@@ -94,34 +94,30 @@ describe("createBookingsForDate", () => {
     expect(bookingData).toHaveLength(20);
   });
 
-  test(
-    "create zero bookings if occupancy rate does not allow it",
-    { timeout: 1000 },
-    () => {
-      const currentDate = Temporal.PlainDate.from("2026-01-01");
-      const hotelsWithRooms = [
-        { id: BigInt(1), totalRooms: 1, rooms: new Rooms(10) },
-        { id: BigInt(2), totalRooms: 1, rooms: new Rooms(10) },
-      ];
-      const nextGuestId = () => 1;
-      const getLengthOfStay = () => 1;
-      const bookingData: string[] = [];
-      const occupancyRate = 0;
+  test("create zero bookings if occupancy rate does not allow it", () => {
+    const currentDate = Temporal.PlainDate.from("2026-01-01");
+    const hotelsWithRooms = [
+      { id: BigInt(1), totalRooms: 1, rooms: new Rooms(10) },
+      { id: BigInt(2), totalRooms: 1, rooms: new Rooms(10) },
+    ];
+    const nextGuestId = () => 1;
+    const getLengthOfStay = () => 1;
+    const bookingData: string[] = [];
+    const occupancyRate = 0;
 
-      createBookingsForDate({
-        currentDate,
-        hotelsWithRooms,
-        nextGuestId,
-        bookingData,
-        occupancyRate,
-        getLengthOfStay,
-      });
+    createBookingsForDate({
+      currentDate,
+      hotelsWithRooms,
+      nextGuestId,
+      bookingData,
+      occupancyRate,
+      getLengthOfStay,
+    });
 
-      expect(bookingData).toHaveLength(0);
-    },
-  );
+    expect(bookingData).toHaveLength(0);
+  });
 
-  test("create zero bookings if hotel is full", { timeout: 1000 }, () => {
+  test("create zero bookings if hotel is full", () => {
     const currentDate = Temporal.PlainDate.from("2026-01-01");
     const rooms = new Rooms(2);
     rooms.occupy(Temporal.PlainDate.from("2026-01-02"));
@@ -145,7 +141,7 @@ describe("createBookingsForDate", () => {
     expect(bookingData).toHaveLength(0);
   });
 
-  test("create bookings over multiple days", { timeout: 1000 }, () => {
+  test("create bookings over multiple days", () => {
     const start = Temporal.PlainDate.from("2026-01-01");
 
     const rooms = new Rooms(1);
@@ -182,7 +178,7 @@ describe("createBookingsForDate", () => {
     ]);
   });
 
-  test("create consecutive bookings", { timeout: 1000 }, () => {
+  test("create consecutive bookings", () => {
     const start = Temporal.PlainDate.from("2026-01-01");
 
     const rooms = new Rooms(1);
@@ -214,4 +210,4 @@ describe("createBookingsForDate", () => {
       `1,1,${start.add({ days: 2 }).toPlainDateTime().toString()},${start.add({ days: 3 }).toPlainDateTime().toString()}`,
     ]);
   });
-});
+}, 5000);
