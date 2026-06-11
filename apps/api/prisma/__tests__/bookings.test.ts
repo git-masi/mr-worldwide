@@ -12,7 +12,6 @@ describe("createBookingData", () => {
     const getGuest = () => ({
       id: guestId,
     });
-    const getCreatedAt = () => now;
 
     const bookingData = createBookingData({
       start: now,
@@ -21,7 +20,6 @@ describe("createBookingData", () => {
       shouldAddBooking,
       getLengthOfStay,
       getGuest,
-      getCreatedAt,
     });
 
     expect(bookingData).toHaveLength(1);
@@ -43,7 +41,6 @@ describe("createBookingData", () => {
     const getGuest = () => ({
       id: guestId,
     });
-    const getCreatedAt = () => now;
 
     const bookingData = createBookingData({
       start: now,
@@ -52,7 +49,6 @@ describe("createBookingData", () => {
       shouldAddBooking,
       getLengthOfStay,
       getGuest,
-      getCreatedAt,
     });
 
     expect(bookingData).toHaveLength(3);
@@ -88,7 +84,6 @@ describe("createBookingData", () => {
     const getGuest = () => ({
       id: guestId,
     });
-    const getCreatedAt = () => now;
 
     const bookingData = createBookingData({
       start: now,
@@ -97,7 +92,6 @@ describe("createBookingData", () => {
       shouldAddBooking,
       getLengthOfStay,
       getGuest,
-      getCreatedAt,
     });
 
     expect(bookingData).toHaveLength(2);
@@ -137,7 +131,6 @@ describe("createBookingData", () => {
         return data;
       };
     })();
-    const getCreatedAt = () => now;
 
     const bookingData = createBookingData({
       start: now,
@@ -146,7 +139,6 @@ describe("createBookingData", () => {
       shouldAddBooking,
       getLengthOfStay,
       getGuest,
-      getCreatedAt,
     });
 
     expect(bookingData).toHaveLength(2);

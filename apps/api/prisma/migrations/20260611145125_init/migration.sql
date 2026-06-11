@@ -12,7 +12,6 @@ CREATE TABLE "bookings" (
     "id" BIGSERIAL NOT NULL,
     "hotel_id" BIGINT NOT NULL,
     "guest_id" BIGINT NOT NULL,
-    "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "check_in" TIMESTAMPTZ NOT NULL,
     "check_out" TIMESTAMPTZ NOT NULL,
 

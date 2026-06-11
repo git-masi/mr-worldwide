@@ -16,7 +16,6 @@ import { from as copyFrom } from "pg-copy-streams";
 
 import {
   createBookingData,
-  getCreatedAtDate,
   getHotelName,
   getLengthOfStay,
   getRandomGuest,
@@ -177,15 +176,12 @@ async function createBookings(
     }
   }
 
-  await write("hotel_id,guest_id,created_at,check_in,check_out\n");
+  await write("hotel_id,guest_id,check_in,check_out\n");
 
   let bookingData: string[] = [];
   let count = 0;
 
   for (const hotel of hotels) {
-    // Start over from 90 days in the past after each hotel
-    const getCreatedAt = getCreatedAtDate(now.subtract({ days: 90 }));
-
     createBookingData({
       start: now,
       end: oneYearFromNow,
@@ -193,10 +189,9 @@ async function createBookings(
       shouldAddBooking,
       getLengthOfStay,
       getGuest,
-      getCreatedAt,
     }).forEach((booking) => {
       bookingData.push(
-        `${booking.hotelId},${booking.guestId},${booking.createdAt},${booking.checkIn},${booking.checkOut}`,
+        `${booking.hotelId},${booking.guestId},${booking.checkIn},${booking.checkOut}`,
       );
     });
 
@@ -228,7 +223,6 @@ async function createBookings(
       COPY bookings (
         hotel_id,
         guest_id,
-        created_at,
         check_in,
         check_out
       )

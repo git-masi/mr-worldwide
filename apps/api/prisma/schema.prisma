@@ -17,12 +17,17 @@ model Hotel {
 }
 
 model Booking {
-  id        BigInt   @id @default(autoincrement())
-  hotelId   BigInt   @map("hotel_id")
-  guestId   BigInt   @map("guest_id")
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
-  checkIn   DateTime @map("check_in") @db.Timestamptz
-  checkOut  DateTime @map("check_out") @db.Timestamptz
+  id       BigInt   @id @default(autoincrement())
+  hotelId  BigInt   @map("hotel_id")
+  guestId  BigInt   @map("guest_id")
+  checkIn  DateTime @map("check_in") @db.Timestamptz
+  checkOut DateTime @map("check_out") @db.Timestamptz
+
+  // A `created_at` column adds a layer of complexity to generating realistic seed data that
+  // is not worth it right now.
+  // However, it could be interesting to implement this in the future as it opens up new areas
+  // for inquiry like: average number of days between booking creation and check in.
+  // createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   hotel Hotel @relation(fields: [hotelId], references: [id])
   guest Guest @relation(fields: [guestId], references: [id])

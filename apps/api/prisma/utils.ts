@@ -90,17 +90,9 @@ export function createBookingData(config: {
   shouldAddBooking: () => boolean;
   getLengthOfStay: () => number;
   getGuest: () => { id: bigint };
-  getCreatedAt: (currentDate: Temporal.PlainDate) => Temporal.PlainDate;
 }) {
-  const {
-    start,
-    end,
-    hotel,
-    shouldAddBooking,
-    getLengthOfStay,
-    getGuest,
-    getCreatedAt,
-  } = config;
+  const { start, end, hotel, shouldAddBooking, getLengthOfStay, getGuest } =
+    config;
 
   const bookingData: BookingCreateManyInput[] = [];
 
@@ -121,8 +113,6 @@ export function createBookingData(config: {
       // Get a random guest
       const guest = getGuest();
 
-      const createdAt = getCreatedAt(currentDate);
-
       // Add the number of nights to the current date to get the check out date
       const checkOut = currentDate.add({ days: getLengthOfStay() });
 
@@ -130,7 +120,6 @@ export function createBookingData(config: {
       bookingData.push({
         hotelId: hotel.id,
         guestId: guest.id,
-        createdAt: createdAt.toPlainDateTime().toString(),
         checkIn: currentDate.toPlainDateTime().toString(),
         checkOut: checkOut.toPlainDateTime().toString(),
       });
@@ -257,49 +246,6 @@ export function getHotelName(): string {
   return `${name} ${location}`;
 }
 
-// The purpose of this function is to create a series of dates that are monotonically increasing
-// unlike the `faker.date.recent`.
-export function getCreatedAtDate(start: Temporal.PlainDate) {
-  let createdAt: Temporal.PlainDate = start;
-
-  const updateCreatedAt = (currentDate: Temporal.PlainDate) => {
-    const { days: numDaysSincePrev } = currentDate.since(createdAt);
-
-    // If it has been less than 10 days since the current date then we reuse the same created at date
-    if (numDaysSincePrev < 10) {
-      return;
-    }
-
-    // If it has been more than 90 days since the current date date then we increment created at by
-    // some number of days between 1 and 5
-    if (numDaysSincePrev > 90) {
-      createdAt = createdAt.add({
-        days: faker.number.int({ min: 1, max: 5 }),
-      });
-      return;
-    }
-
-    // Increment the created at date 1% of the time.
-    const shouldIncrement = faker.datatype.boolean({
-      probability: 0.01,
-    });
-
-    if (!shouldIncrement) {
-      return;
-    }
-
-    createdAt = createdAt.add({
-      days: 1,
-    });
-  };
-
-  return (currentDate: Temporal.PlainDate): Temporal.PlainDate => {
-    updateCreatedAt(currentDate);
-
-    return createdAt;
-  };
-}
-
 // Randomly select a guest **without replacement**.
 // This function mutates the input array.
 // With a large enough array of guests there is a greatly reduced chance of guests
@@ -337,15 +283,9 @@ export function getRandomGuestId(config: {
   numHighValueGuests: number;
   highValueGuestProbability: number;
 }): () => bigint {
-  const {
-    totalGuests,
-    numHighValueGuests,
-    highValueGuestProbability,
-  } = config;
+  const { totalGuests, numHighValueGuests, highValueGuestProbability } = config;
 
-  const guestIds = Array.from({ length: totalGuests }).map(
-    (_, i) => i + 1,
-  );
+  const guestIds = Array.from({ length: totalGuests }).map((_, i) => i + 1);
 
   faker.helpers.shuffle(guestIds, { inplace: true });
 
