@@ -220,7 +220,7 @@ export function getNextGuestId(config: {
         (id) => !guestsSeen.has(id),
       );
       if (highValueGuestsNotSeen.length > 0) {
-        return faker.helpers.arrayElement(highValueGuests);
+        return faker.helpers.arrayElement(highValueGuestsNotSeen);
       }
     }
 
