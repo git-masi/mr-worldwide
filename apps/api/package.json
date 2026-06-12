@@ -12,7 +12,7 @@
     "db:studio": "dotenv -e .env -- prisma studio",
     "db:seed": "dotenv -e .env -- prisma db seed",
     "db:validate": "dotenv -e .env -- prisma validate",
-    "db:fresh:start": "docker compose down -v && pnpm db:start && pnpm db:migrate"
+    "db:fresh:start": "docker compose down -v && sleep 1 && pnpm db:start && sleep 1 && pnpm db:migrate"
   },
   "dependencies": {
     "@datastructures-js/heap": "github:datastructures-js/heap",
