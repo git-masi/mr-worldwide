@@ -210,10 +210,18 @@ export function getNextGuestId(config: {
   const { totalGuests, useHighValueGuest, isHighValueGuest } = config;
   const gen = range(totalGuests);
   const highValueGuests: number[] = [];
+  const seen: Record<string, Set<number>> = {};
 
-  return () => {
+  return (currentDate: Temporal.PlainDate) => {
+    const guestsSeen = (seen[currentDate.toString()] ??= new Set<number>());
+
     if (useHighValueGuest(highValueGuests.length)) {
-      return faker.helpers.arrayElement(highValueGuests);
+      const highValueGuestsNotSeen = highValueGuests.filter(
+        (id) => !guestsSeen.has(id),
+      );
+      if (highValueGuestsNotSeen.length > 0) {
+        return faker.helpers.arrayElement(highValueGuests);
+      }
     }
 
     const value = gen.next().value;
@@ -233,6 +241,7 @@ export function getNextGuestId(config: {
 
     // Determine if guest should become a high value guest
     if (isHighValueGuest()) {
+      guestsSeen.add(guestId);
       highValueGuests.push(guestId);
     }
 
@@ -270,7 +279,7 @@ export function createBookingsForDate(config: {
   hotelsWithRooms: HotelWithRooms[];
   bookingData: string[];
   shouldAddBooking: () => boolean;
-  nextGuestId: () => number;
+  nextGuestId: (currentDate: Temporal.PlainDate) => number;
   getLengthOfStay: () => number;
 }) {
   const {
@@ -287,7 +296,7 @@ export function createBookingsForDate(config: {
       continue;
     }
 
-    const guestId = nextGuestId();
+    const guestId = nextGuestId(currentDate);
     const checkIn = currentDate.toPlainDateTime().toString();
     const futureDate = currentDate.add({ days: getLengthOfStay() });
     const checkOut = futureDate.toPlainDateTime().toString();
