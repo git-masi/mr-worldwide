@@ -93,11 +93,11 @@ describe("getNextGuestId", () => {
       totalGuests: 10,
       // Only the first guest is high value
       isHighValueGuest: (() => {
-        let shouldUse = true;
+        let first = true;
 
         return () => {
-          if (shouldUse) {
-            shouldUse = false;
+          if (first) {
+            first = false;
             return true;
           }
 
