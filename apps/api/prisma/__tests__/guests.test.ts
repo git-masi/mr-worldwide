@@ -19,20 +19,21 @@ describe("getNextGuestId", () => {
     ]).toMatchObject([1, 2, 3]);
   });
 
-  test("throw error if no new IDs and no high value guests", () => {
+  test("loop back to start if all guest IDs have been used", () => {
     const nextId = getNextGuestId({
       totalGuests: 3,
       isHighValueGuest: () => false,
       useHighValueGuest: () => false,
     });
 
-    nextId(currentDate);
-    nextId(currentDate);
-    nextId(currentDate);
-
-    expect(() => nextId(currentDate)).toThrow(
-      "Cannot generate new guest ID nor get high value guest ID",
-    );
+    expect([
+      nextId(currentDate),
+      nextId(currentDate),
+      nextId(currentDate),
+      nextId(currentDate),
+      nextId(currentDate),
+      nextId(currentDate),
+    ]).toMatchObject([1, 2, 3, 1, 2, 3]);
   });
 
   test("always return high value guest", () => {

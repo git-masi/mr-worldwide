@@ -208,9 +208,10 @@ export function getNextGuestId(config: {
   isHighValueGuest: () => boolean;
 }) {
   const { totalGuests, useHighValueGuest, isHighValueGuest } = config;
-  const gen = range(totalGuests);
+
   const highValueGuests: number[] = [];
   const seen: Record<string, Set<number>> = {};
+  let guestIds = range(totalGuests);
 
   return (currentDate: Temporal.PlainDate) => {
     const guestsSeen = (seen[currentDate.toString()] ??= new Set<number>());
@@ -224,17 +225,16 @@ export function getNextGuestId(config: {
       }
     }
 
-    const value = gen.next().value;
+    let value = guestIds.next().value;
 
-    // Fall back to a high value guest ID if there are no new guest IDs to generate
+    // Reset the iterator if we run out of values
     if (typeof value !== "number") {
-      if (highValueGuests.length < 1) {
-        throw new Error(
-          "Cannot generate new guest ID nor get high value guest ID",
-        );
-      }
+      guestIds = range(totalGuests);
 
-      return faker.helpers.arrayElement(highValueGuests);
+      value = guestIds.next().value;
+      if (typeof value !== "number") {
+        throw new Error("Cannot get new guest ID");
+      }
     }
 
     const guestId = value + 1;
