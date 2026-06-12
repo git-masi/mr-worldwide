@@ -229,6 +229,7 @@ export function getNextGuestId(config: {
 
     // Reset the iterator if we run out of values
     if (typeof value !== "number") {
+      // TODO: Making this change slowed things down significantly. Investigate why.
       guestIds = range(totalGuests);
 
       value = guestIds.next().value;
