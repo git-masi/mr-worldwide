@@ -45,7 +45,7 @@ const APPROXIMATE_BOOKINGS = Math.ceil(
     APPROXIMATE_AVERAGE_HOTEL_ROOMS *
     NUM_DAYS_IN_YEAR *
     OCCUPANCY_RATE) /
-    WEIGHTED_AVERAGE_NIGHTS,
+  WEIGHTED_AVERAGE_NIGHTS,
 );
 // Calculate number of guests based on expected bookings to ensure a large pool available
 const NUM_GUESTS = Math.ceil(APPROXIMATE_BOOKINGS / 2);
@@ -200,10 +200,8 @@ async function createGuestData(path: string) {
   await write("first_name,last_name,email\n");
 
   const guestData: string[] = [];
-  // Count the guests so that we have something to look at in the terminal :D
-  let count = 0;
 
-  for (const _ of range(NUM_GUESTS)) {
+  for (const n of range(NUM_GUESTS)) {
     const firstName = faker.person.firstName();
     const lastName = faker.person.lastName();
     const email = faker.internet.email({
@@ -211,22 +209,15 @@ async function createGuestData(path: string) {
       lastName,
     });
 
-    count++;
     guestData.push(`${firstName},${lastName},${email}`);
 
     // Flush chunks of data to disk
-    if (guestData.length > 25_000) {
-      console.log(`Flushing guests to disk | ${count} of ${NUM_GUESTS}`);
+    if (guestData.length > 25_000 || n === NUM_GUESTS - 1) {
+      console.log(`Flushing guests to disk | ${n + 1} of ${NUM_GUESTS}`);
       await write(guestData.join("\n") + "\n");
       // Reset the array so it can be reused
       guestData.length = 0;
     }
-  }
-
-  // Flush any remaining data
-  if (guestData.length > 0) {
-    console.log(`Flushing guests to disk | ${count} of ${NUM_GUESTS}`);
-    await write(guestData.join("\n") + "\n");
   }
 
   await end();
