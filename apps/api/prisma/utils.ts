@@ -213,15 +213,18 @@ export function getNextGuestId(config: {
   const seen: Record<string, Set<number>> = {};
   const guestIds = rangeForever(totalGuests);
 
-  return (currentDate: Temporal.PlainDate) => {
+  return function (currentDate: Temporal.PlainDate) {
     const guestsSeen = (seen[currentDate.toString()] ??= new Set<number>());
 
     if (useHighValueGuest(highValueGuests.length)) {
       const highValueGuestsNotSeen = highValueGuests.filter(
         (id) => !guestsSeen.has(id),
       );
+
       if (highValueGuestsNotSeen.length > 0) {
-        return faker.helpers.arrayElement(highValueGuestsNotSeen);
+        const guestId = faker.helpers.arrayElement(highValueGuestsNotSeen);
+        guestsSeen.add(guestId);
+        return guestId;
       }
     }
 
@@ -229,8 +232,10 @@ export function getNextGuestId(config: {
 
     // Determine if guest should become a high value guest
     if (isHighValueGuest()) {
-      guestsSeen.add(guestId);
       highValueGuests.push(guestId);
+      // We don't add every `guestId` to `guestsSeen` because the likelihood of reusing a non high value guest
+      // on a given date is incredibly small when the total number of guests is in the hundreds of thousands.
+      guestsSeen.add(guestId);
     }
 
     return guestId;
