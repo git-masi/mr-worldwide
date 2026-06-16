@@ -255,17 +255,12 @@ async function createBookingData(
   // Write CSV header
   await write("hotel_id,guest_id,check_in,check_out\n");
 
-  const bookingData: string[] = [];
-  // Count the bookings so that we have something to look at in the terminal :D
-  let count = 0;
-
   // Create bookings for 1 year starting from now
   for (const daysPassed of range(NUM_DAYS_IN_YEAR)) {
     const currentDate = now.add({ days: daysPassed });
 
-    createBookingsForDate({
+    const bookingData = createBookingsForDate({
       currentDate,
-      bookingData,
       nextGuestId,
       getLengthOfStay,
       availableHotels: getAvailableHotels(
@@ -275,14 +270,11 @@ async function createBookingData(
       ),
     });
 
-    count += bookingData.length;
     console.log(
-      `Flushing bookings to disk | ${count} of ~${APPROXIMATE_BOOKINGS}`,
+      `Flushing bookings to disk for day ${daysPassed} of ${NUM_DAYS_IN_YEAR}`,
     );
 
     await write(bookingData.join("\n") + "\n");
-    // Reset the array so it can be reused
-    bookingData.length = 0;
   }
 
   end();

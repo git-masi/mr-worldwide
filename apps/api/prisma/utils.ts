@@ -278,18 +278,13 @@ export function isHighValueGuest(
 
 export function createBookingsForDate(config: {
   currentDate: Temporal.PlainDate;
-  bookingData: string[];
   nextGuestId: (currentDate: Temporal.PlainDate) => number;
   getLengthOfStay: () => number;
   availableHotels: Iterable<HotelWithRooms>;
 }) {
-  const {
-    currentDate,
-    nextGuestId,
-    bookingData,
-    getLengthOfStay,
-    availableHotels,
-  } = config;
+  const { currentDate, nextGuestId, getLengthOfStay, availableHotels } = config;
+
+  const bookingData: string[] = [];
 
   for (const hotel of availableHotels) {
     const guestId = nextGuestId(currentDate);
@@ -302,6 +297,8 @@ export function createBookingsForDate(config: {
 
     bookingData.push(`${hotel.id},${guestId},${checkIn},${checkOut}`);
   }
+
+  return bookingData;
 }
 
 export function* getAvailableHotels(

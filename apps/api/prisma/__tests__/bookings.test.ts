@@ -9,16 +9,14 @@ describe("createBookingsForDate", () => {
     const rooms = new Rooms(1);
     const nextGuestId = () => 1;
     const getLengthOfStay = () => 1;
-    const bookingData: string[] = [];
 
     function* getAvailableHotels() {
       yield { id: BigInt(1), totalRooms: 1, rooms };
     }
 
-    createBookingsForDate({
+    const bookingData = createBookingsForDate({
       currentDate,
       nextGuestId,
-      bookingData,
       getLengthOfStay,
       availableHotels: getAvailableHotels(),
     });
@@ -44,7 +42,6 @@ describe("createBookingsForDate", () => {
     ];
     const nextGuestId = () => 1;
     const getLengthOfStay = () => 1;
-    const bookingData: string[] = [];
 
     function* getAvailableHotels() {
       for (const hotel of hotelsWithRooms) {
@@ -52,10 +49,9 @@ describe("createBookingsForDate", () => {
       }
     }
 
-    createBookingsForDate({
+    const bookingData = createBookingsForDate({
       currentDate,
       nextGuestId,
-      bookingData,
       getLengthOfStay,
       availableHotels: getAvailableHotels(),
     });
@@ -85,7 +81,6 @@ describe("createBookingsForDate", () => {
     ];
     const nextGuestId = () => 1;
     const getLengthOfStay = () => 1;
-    const bookingData: string[] = [];
 
     function* getAvailableHotels() {
       for (const hotel of hotelsWithRooms) {
@@ -95,10 +90,9 @@ describe("createBookingsForDate", () => {
       }
     }
 
-    createBookingsForDate({
+    const bookingData = createBookingsForDate({
       currentDate,
       nextGuestId,
-      bookingData,
       getLengthOfStay,
       availableHotels: getAvailableHotels(),
     });
@@ -116,24 +110,26 @@ describe("createBookingsForDate", () => {
     const hotelsWithRooms = [{ id: BigInt(1), totalRooms: 1, rooms }];
     const nextGuestId = () => 1;
     const getLengthOfStay = () => 1;
-    const bookingData: string[] = [];
     const shouldAddBooking = () => true;
+
+    const bookingData: string[] = [];
 
     for (const daysPassed of range(2)) {
       // The room is free on day 2
       const currentDate = start.add({ days: daysPassed });
 
-      createBookingsForDate({
-        currentDate,
-        nextGuestId,
-        bookingData,
-        getLengthOfStay,
-        availableHotels: getAvailableHotels(
+      bookingData.push(
+        ...createBookingsForDate({
           currentDate,
-          hotelsWithRooms,
-          shouldAddBooking,
-        ),
-      });
+          nextGuestId,
+          getLengthOfStay,
+          availableHotels: getAvailableHotels(
+            currentDate,
+            hotelsWithRooms,
+            shouldAddBooking,
+          ),
+        }),
+      );
     }
 
     expect(bookingData).toHaveLength(1);
@@ -148,29 +144,30 @@ describe("createBookingsForDate", () => {
 
   test("create consecutive bookings", () => {
     const start = Temporal.PlainDate.from("2026-01-01");
-
     const rooms = new Rooms(1);
-
     const hotelsWithRooms = [{ id: BigInt(1), totalRooms: 1, rooms }];
+
     const nextGuestId = () => 1;
     const getLengthOfStay = () => 1;
-    const bookingData: string[] = [];
     const shouldAddBooking = () => true;
+
+    const bookingData: string[] = [];
 
     for (const daysPassed of range(3)) {
       const currentDate = start.add({ days: daysPassed });
 
-      createBookingsForDate({
-        currentDate,
-        nextGuestId,
-        bookingData,
-        getLengthOfStay,
-        availableHotels: getAvailableHotels(
+      bookingData.push(
+        ...createBookingsForDate({
           currentDate,
-          hotelsWithRooms,
-          shouldAddBooking,
-        ),
-      });
+          nextGuestId,
+          getLengthOfStay,
+          availableHotels: getAvailableHotels(
+            currentDate,
+            hotelsWithRooms,
+            shouldAddBooking,
+          ),
+        }),
+      );
     }
 
     expect(bookingData).toHaveLength(3);
