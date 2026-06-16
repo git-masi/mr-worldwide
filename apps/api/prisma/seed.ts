@@ -136,6 +136,8 @@ async function main() {
     );
   }
 
+  const startTime = Temporal.Now.instant();
+
   await pgClient.connect();
 
   const hotels = await createHotels();
@@ -154,6 +156,14 @@ async function main() {
   console.log(`✅ Created bookings`);
 
   await pgClient.end();
+
+  const numHotels = await prisma.hotel.count();
+  const numGuests = await prisma.guest.count();
+  const numBookings = await prisma.booking.count();
+
+  console.log(
+    `Created ${numHotels} hotels, ${numGuests} guests, and ${numBookings} bookings in ${Temporal.Now.instant().since(startTime).toLocaleString()}`,
+  );
 }
 
 function createHotels() {
