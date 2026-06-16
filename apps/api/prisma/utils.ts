@@ -206,7 +206,7 @@ export function getNextGuestId(config: {
   totalGuests: number;
   useHighValueGuest: (poolSize: number) => boolean;
   isHighValueGuest: () => boolean;
-}) {
+}): (currentDate: Temporal.PlainDate) => number {
   const { totalGuests, useHighValueGuest, isHighValueGuest } = config;
 
   const highValueGuests: number[] = [];
@@ -246,7 +246,7 @@ export function useHighValueGuest(
   numHighValueGuests: number,
   baseHighValueGuestProbability: number,
 ): (poolSize: number) => boolean {
-  return (poolSize: number) => {
+  return function (poolSize: number) {
     // As the pool of high value increases so too will this number
     const currentFractionOfHighValueGuests = poolSize / numHighValueGuests;
 
@@ -264,7 +264,9 @@ export function useHighValueGuest(
 export function isHighValueGuest(
   highValueGuestProbability: number,
 ): () => boolean {
-  return () => faker.datatype.boolean(highValueGuestProbability);
+  return function () {
+    return faker.datatype.boolean(highValueGuestProbability);
+  };
 }
 
 export function createBookingsForDate(config: {
@@ -272,7 +274,7 @@ export function createBookingsForDate(config: {
   nextGuestId: (currentDate: Temporal.PlainDate) => number;
   getLengthOfStay: () => number;
   availableHotels: Iterable<HotelWithRooms>;
-}) {
+}): string[] {
   const { currentDate, nextGuestId, getLengthOfStay, availableHotels } = config;
 
   const bookingData: string[] = [];
