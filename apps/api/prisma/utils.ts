@@ -199,6 +199,61 @@ export function getHotelName(): string {
   return `${name} ${location}`;
 }
 
+export class HighValueGuests {
+  private guests: number[];
+  private end: number;
+  private checkIn: string;
+
+  constructor() {
+    this.guests = [];
+    this.end = this.guests.length - 1;
+    this.checkIn = "";
+  }
+
+  add(id: number, checkIn: string): void {
+    // Add to the pool of guests but do not make available until the next day
+    this.guests.push(id);
+    if (this.checkIn === "") {
+      this.checkIn = checkIn;
+    }
+  }
+
+  next(checkIn: string): number | null {
+    if (this.checkIn != checkIn) {
+      this.checkIn = checkIn;
+      // Reset the window if we are dealing with a new `checkIn` date
+      this.end = this.guests.length - 1;
+    }
+
+    if (this.guests.length === 0 || this.end < 0) {
+      return null;
+    }
+
+    const idx = faker.number.int({ min: 0, max: this.end });
+
+    const guestId = this.guests[idx];
+    if (!guestId) {
+      return null;
+    }
+
+    // Swap the guest ID so that it is out of bounds
+    swap(this.guests, idx, this.end);
+
+    // Shrink the window
+    this.end--;
+
+    return guestId;
+  }
+
+  getNumAvailable(): number {
+    return this.end + 1;
+  }
+}
+
+function swap(arr: unknown[], i: number, j: number): void {
+  [arr[i], arr[j]] = [arr[j], arr[i]];
+}
+
 // This function generates guest IDs with some probability of returning a previously used ID
 // if the guest was a "high value" guest.
 // High value guests are guests that we want to use in many bookings.
@@ -206,24 +261,17 @@ export function getNextGuestId(config: {
   totalGuests: number;
   useHighValueGuest: (poolSize: number) => boolean;
   isHighValueGuest: () => boolean;
-}): (currentDate: Temporal.PlainDate) => number {
+}): (currentDate: string) => number {
   const { totalGuests, useHighValueGuest, isHighValueGuest } = config;
 
-  const highValueGuests: number[] = [];
-  const seen: Record<string, Set<number>> = {};
+  const highValueGuests = new HighValueGuests();
   const guestIds = rangeForever(totalGuests);
 
-  return function (currentDate: Temporal.PlainDate) {
-    const guestsSeen = (seen[currentDate.toString()] ??= new Set<number>());
+  return function (currentDate: string) {
+    if (useHighValueGuest(highValueGuests.getNumAvailable())) {
+      const guestId = highValueGuests.next(currentDate);
 
-    if (useHighValueGuest(highValueGuests.length)) {
-      const highValueGuestsNotSeen = highValueGuests.filter(
-        (id) => !guestsSeen.has(id),
-      );
-
-      if (highValueGuestsNotSeen.length > 0) {
-        const guestId = faker.helpers.arrayElement(highValueGuestsNotSeen);
-        guestsSeen.add(guestId);
+      if (guestId) {
         return guestId;
       }
     }
@@ -232,10 +280,7 @@ export function getNextGuestId(config: {
 
     // Determine if guest should become a high value guest
     if (isHighValueGuest()) {
-      highValueGuests.push(guestId);
-      // We don't add every `guestId` to `guestsSeen` because the likelihood of reusing a non high value guest
-      // on a given date is incredibly small when the total number of guests is in the hundreds of thousands.
-      guestsSeen.add(guestId);
+      highValueGuests.add(guestId, currentDate);
     }
 
     return guestId;
@@ -271,7 +316,7 @@ export function isHighValueGuest(
 
 export function createBookingsForDate(config: {
   currentDate: Temporal.PlainDate;
-  nextGuestId: (currentDate: Temporal.PlainDate) => number;
+  nextGuestId: (currentDate: string) => number;
   getLengthOfStay: () => number;
   availableHotels: Iterable<HotelWithRooms>;
 }): string[] {
@@ -281,7 +326,7 @@ export function createBookingsForDate(config: {
   const bookingData: string[] = [];
 
   for (const hotel of availableHotels) {
-    const guestId = nextGuestId(currentDate);
+    const guestId = nextGuestId(checkIn);
     const futureDate = currentDate.add({ days: getLengthOfStay() });
     const checkOut = futureDate.toPlainDateTime().toString();
 
