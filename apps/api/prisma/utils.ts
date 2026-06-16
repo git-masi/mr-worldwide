@@ -277,11 +277,11 @@ export function createBookingsForDate(config: {
 }): string[] {
   const { currentDate, nextGuestId, getLengthOfStay, availableHotels } = config;
 
+  const checkIn = currentDate.toPlainDateTime().toString();
   const bookingData: string[] = [];
 
   for (const hotel of availableHotels) {
     const guestId = nextGuestId(currentDate);
-    const checkIn = currentDate.toPlainDateTime().toString();
     const futureDate = currentDate.add({ days: getLengthOfStay() });
     const checkOut = futureDate.toPlainDateTime().toString();
 
