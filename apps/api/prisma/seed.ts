@@ -113,6 +113,7 @@ main()
   });
 
 async function main() {
+  const startTime = Temporal.Now.instant();
   console.log("🌱 Seeding database...");
 
   const dir = "./temp";
@@ -123,20 +124,9 @@ async function main() {
     mkdirSync(dir, { recursive: true });
   }
 
-  const numExistingUsers = await prisma.guest.count();
-
   await prisma.booking.deleteMany();
   await prisma.hotel.deleteMany();
   await prisma.guest.deleteMany();
-
-  if (numExistingUsers > 0) {
-    // Restart user IDs at 1 to ensure user selection works as expected.
-    prisma.$executeRawUnsafe(
-      `ALTER TABLE guests ALTER COLUMN id RESTART WITH 1;`,
-    );
-  }
-
-  const startTime = Temporal.Now.instant();
 
   await pgClient.connect();
 
