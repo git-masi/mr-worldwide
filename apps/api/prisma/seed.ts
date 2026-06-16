@@ -29,7 +29,8 @@ import {
 const NOW = Temporal.Now.plainDateISO();
 const START_DATE = NOW.subtract({ years: 1 });
 const END_DATE = NOW.add({ years: 1 });
-const NUM_DAYS = END_DATE.since(START_DATE).days;
+// Add 1 to make NUM_DAYS inclusive of the end date.
+const NUM_DAYS = END_DATE.since(START_DATE).days + 1;
 const NUM_HOTELS = 500;
 const MIN_HOTEL_ROOMS = 10;
 const MAX_HOTEL_ROOMS = 100;
@@ -37,16 +38,16 @@ const APPROXIMATE_AVERAGE_HOTEL_ROOMS = Math.ceil(
   (MAX_HOTEL_ROOMS + MIN_HOTEL_ROOMS) / 2,
 );
 const OCCUPANCY_RATE = 0.7;
-// sum of each length of stay * it's weight / sum of weights
-// (10×1+15×2+25×3+20×4+20×5+5×6+5×7) / (10+15+25+20+20+5+5)
-const WEIGHTED_AVERAGE_NIGHTS = 3.6;
+// The weighted average stay is 3.6 but if we round down to 3 we get a more accurate approximation
+// for the total number of bookings.
+const AVERAGE_LENGTH_OF_STAY = 3;
 // We use a formula to estimate the number of bookings we will have.
 // This is useful for determining how many guests we will need.
-// (500 * 55 * 730 * .7) / 3.6 = 3,903,472
-// From experience the number of bookings produced is significantly higher
+// (500 * 55 * 731 * .7) / 3 = 4,690,583
+// From experience the number of bookings produced is a bit higher
 const APPROXIMATE_BOOKINGS = Math.ceil(
   (NUM_HOTELS * APPROXIMATE_AVERAGE_HOTEL_ROOMS * NUM_DAYS * OCCUPANCY_RATE) /
-    WEIGHTED_AVERAGE_NIGHTS,
+    AVERAGE_LENGTH_OF_STAY,
 );
 // Calculate number of guests based on expected bookings to ensure a large pool available
 const NUM_GUESTS = Math.ceil(APPROXIMATE_BOOKINGS / 2);
