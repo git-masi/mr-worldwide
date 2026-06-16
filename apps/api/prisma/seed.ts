@@ -271,7 +271,7 @@ async function createBookingData(
     });
 
     console.log(
-      `Flushing bookings to disk for day ${currentDate.since(START_DATE).days + 1} of ${NUM_DAYS}`,
+      `Flushing bookings to disk | day ${currentDate.since(START_DATE).days + 1} of ${NUM_DAYS}`,
     );
     await write(bookingData.join("\n") + "\n");
 
