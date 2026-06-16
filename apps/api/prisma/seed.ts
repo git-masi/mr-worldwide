@@ -114,6 +114,7 @@ main()
 
 async function main() {
   const startTime = Temporal.Now.instant();
+
   console.log("🌱 Seeding database...");
 
   const dir = "./temp";
