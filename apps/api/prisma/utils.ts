@@ -18,9 +18,8 @@ appropriate location like in a @repo package.
 
 import { MinHeap } from "@datastructures-js/heap";
 import { faker } from "@faker-js/faker";
-import { range } from "@repo/numbers/range";
+import { range, rangeForever } from "@repo/numbers/range";
 import { Temporal } from "temporal-polyfill"; // Technically not needed for node v26
-import { Hotel } from "./generated/client";
 
 type Checkout = { checkOut: string };
 
@@ -212,7 +211,7 @@ export function getNextGuestId(config: {
 
   const highValueGuests: number[] = [];
   const seen: Record<string, Set<number>> = {};
-  let guestIds = range(totalGuests);
+  const guestIds = rangeForever(totalGuests);
 
   return (currentDate: Temporal.PlainDate) => {
     const guestsSeen = (seen[currentDate.toString()] ??= new Set<number>());
@@ -226,20 +225,7 @@ export function getNextGuestId(config: {
       }
     }
 
-    let value = guestIds.next().value;
-
-    // Reset the iterator if we run out of values
-    if (typeof value !== "number") {
-      // TODO: Making this change slowed things down significantly. Investigate why.
-      guestIds = range(totalGuests);
-
-      value = guestIds.next().value;
-      if (typeof value !== "number") {
-        throw new Error("Cannot get new guest ID");
-      }
-    }
-
-    const guestId = value + 1;
+    const guestId = guestIds.next().value + 1;
 
     // Determine if guest should become a high value guest
     if (isHighValueGuest()) {
