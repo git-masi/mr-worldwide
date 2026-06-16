@@ -273,7 +273,6 @@ async function createBookingData(
     console.log(
       `Flushing bookings to disk for day ${daysPassed} of ${NUM_DAYS_IN_YEAR}`,
     );
-
     await write(bookingData.join("\n") + "\n");
   }
 

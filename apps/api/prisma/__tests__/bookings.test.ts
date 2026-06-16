@@ -7,9 +7,9 @@ describe("createBookingsForDate", () => {
   test("create one booking", () => {
     const currentDate = Temporal.PlainDate.from("2026-01-01");
     const rooms = new Rooms(1);
+
     const nextGuestId = () => 1;
     const getLengthOfStay = () => 1;
-
     function* getAvailableHotels() {
       yield { id: BigInt(1), totalRooms: 1, rooms };
     }
@@ -40,9 +40,9 @@ describe("createBookingsForDate", () => {
       { id: BigInt(1), totalRooms: 1, rooms: new Rooms(1) },
       { id: BigInt(2), totalRooms: 1, rooms: new Rooms(1) },
     ];
+
     const nextGuestId = () => 1;
     const getLengthOfStay = () => 1;
-
     function* getAvailableHotels() {
       for (const hotel of hotelsWithRooms) {
         yield hotel;
@@ -79,9 +79,9 @@ describe("createBookingsForDate", () => {
       { id: BigInt(1), totalRooms, rooms: new Rooms(totalRooms) },
       { id: BigInt(2), totalRooms, rooms: new Rooms(totalRooms) },
     ];
+
     const nextGuestId = () => 1;
     const getLengthOfStay = () => 1;
-
     function* getAvailableHotels() {
       for (const hotel of hotelsWithRooms) {
         for (const _ of range(totalRooms)) {
@@ -108,6 +108,7 @@ describe("createBookingsForDate", () => {
     rooms.occupy(start.add({ days: 1 }));
 
     const hotelsWithRooms = [{ id: BigInt(1), totalRooms: 1, rooms }];
+
     const nextGuestId = () => 1;
     const getLengthOfStay = () => 1;
     const shouldAddBooking = () => true;
