@@ -211,7 +211,7 @@ export class HighValueGuests {
   }
 
   add(id: number, checkIn: string): void {
-    // Add to the pool of guests but do not make available until the next day
+    // Add to the pool of guests but do not make ID available until the next day
     this.guests.push(id);
     if (this.checkIn === "") {
       this.checkIn = checkIn;
