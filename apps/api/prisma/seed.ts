@@ -257,8 +257,6 @@ async function createBookingData(
       probability: OCCUPANCY_RATE,
     });
 
-  const now = Temporal.Now.plainDateISO();
-
   // Open writable stream to CSV to save bookings
   const { write, end } = getStreamWriter(path);
 
@@ -285,7 +283,7 @@ async function createBookingData(
     );
     await write(bookingData.join("\n") + "\n");
 
-    currentDate = now.add({ days: 1 });
+    currentDate = currentDate.add({ days: 1 });
   }
 
   end();
