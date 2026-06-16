@@ -27,6 +27,10 @@ import {
 } from "./utils";
 
 const NUM_DAYS_IN_YEAR = 365;
+const NOW = Temporal.Now.plainDateISO();
+const START_DATE = NOW.subtract({ years: 1 });
+const END_DATE = NOW.add({ years: 1 });
+const NUM_DAYS = END_DATE.since(START_DATE).days;
 const NUM_HOTELS = 500;
 const MIN_HOTEL_ROOMS = 10;
 const MAX_HOTEL_ROOMS = 100;
@@ -42,10 +46,7 @@ const WEIGHTED_AVERAGE_NIGHTS = 3.6;
 // (500 * 55 * 365 * .7) / 3.6 = 1,951,736
 // From experience the number of bookings produced is closer to 2.4 million
 const APPROXIMATE_BOOKINGS = Math.ceil(
-  (NUM_HOTELS *
-    APPROXIMATE_AVERAGE_HOTEL_ROOMS *
-    NUM_DAYS_IN_YEAR *
-    OCCUPANCY_RATE) /
+  (NUM_HOTELS * APPROXIMATE_AVERAGE_HOTEL_ROOMS * NUM_DAYS * OCCUPANCY_RATE) /
     WEIGHTED_AVERAGE_NIGHTS,
 );
 // Calculate number of guests based on expected bookings to ensure a large pool available
@@ -266,9 +267,9 @@ async function createBookingData(
   await write("hotel_id,guest_id,check_in,check_out\n");
 
   // Create bookings for 1 year starting from now
-  for (const daysPassed of range(NUM_DAYS_IN_YEAR)) {
-    const currentDate = now.add({ days: daysPassed });
+  let currentDate = START_DATE;
 
+  while (Temporal.PlainDate.compare(currentDate, END_DATE) <= 0) {
     const bookingData = createBookingsForDate({
       currentDate,
       nextGuestId,
@@ -281,9 +282,11 @@ async function createBookingData(
     });
 
     console.log(
-      `Flushing bookings to disk for day ${daysPassed} of ${NUM_DAYS_IN_YEAR}`,
+      `Flushing bookings to disk for day ${currentDate.since(START_DATE).days + 1} of ${NUM_DAYS}`,
     );
     await write(bookingData.join("\n") + "\n");
+
+    currentDate = now.add({ days: 1 });
   }
 
   end();
