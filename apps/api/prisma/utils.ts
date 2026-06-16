@@ -20,6 +20,7 @@ import { MinHeap } from "@datastructures-js/heap";
 import { faker } from "@faker-js/faker";
 import { range } from "@repo/numbers/range";
 import { Temporal } from "temporal-polyfill"; // Technically not needed for node v26
+import { Hotel } from "./generated/client";
 
 type Checkout = { checkOut: string };
 
@@ -277,26 +278,20 @@ export function isHighValueGuest(
 
 export function createBookingsForDate(config: {
   currentDate: Temporal.PlainDate;
-  hotelsWithRooms: HotelWithRooms[];
   bookingData: string[];
-  shouldAddBooking: () => boolean;
   nextGuestId: (currentDate: Temporal.PlainDate) => number;
   getLengthOfStay: () => number;
+  availableHotels: Iterable<HotelWithRooms>;
 }) {
   const {
     currentDate,
-    hotelsWithRooms,
     nextGuestId,
     bookingData,
-    shouldAddBooking,
     getLengthOfStay,
+    availableHotels,
   } = config;
 
-  for (const hotel of getAvailableHotels(currentDate, hotelsWithRooms)) {
-    if (!shouldAddBooking()) {
-      continue;
-    }
-
+  for (const hotel of availableHotels) {
     const guestId = nextGuestId(currentDate);
     const checkIn = currentDate.toPlainDateTime().toString();
     const futureDate = currentDate.add({ days: getLengthOfStay() });
@@ -309,33 +304,28 @@ export function createBookingsForDate(config: {
   }
 }
 
-function* getAvailableHotels(
+export function* getAvailableHotels(
   currentDate: Temporal.PlainDate,
   hotelsWithRooms: HotelWithRooms[],
-) {
-  let availableHotels = hotelsWithRooms.filter((hotel) => {
+  shouldAddBooking: () => boolean,
+): Iterable<HotelWithRooms, void> {
+  const availableHotels: HotelWithRooms[] = [];
+
+  for (const hotel of hotelsWithRooms) {
     // `rooms.vacate` mutates the data in `rooms`
     hotel.rooms.vacate(currentDate);
-    return hotel.rooms.getNumAvailableRooms() > 0;
-  });
 
-  const hotelBookingAttemptCount: Record<string, number> = Object.fromEntries(
-    availableHotels.map((hotel) => [
-      hotel.id.toString(),
-      hotel.rooms.getNumAvailableRooms(),
-    ]),
-  );
+    for (const _ of range(hotel.rooms.getNumAvailableRooms())) {
+      if (shouldAddBooking()) {
+        availableHotels.push(hotel);
+      }
+    }
+  }
+
+  // Randomize the hotels
+  faker.helpers.shuffle(availableHotels, { inplace: true });
 
   while (availableHotels.length > 0) {
-    const hotel = faker.helpers.arrayElement(availableHotels);
-    const hotelIdStr = hotel.id.toString();
-
-    hotelBookingAttemptCount[hotelIdStr]! -= 1;
-
-    if (hotelBookingAttemptCount[hotelIdStr] === 0) {
-      availableHotels = availableHotels.filter((h) => h.id !== hotel.id);
-    }
-
-    yield hotel;
+    yield availableHotels.pop()!;
   }
 }

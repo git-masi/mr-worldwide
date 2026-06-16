@@ -23,6 +23,7 @@ import {
   useHighValueGuest,
   getLengthOfStay,
   type HotelWithRooms,
+  getAvailableHotels,
 } from "./utils";
 
 const NUM_DAYS_IN_YEAR = 365;
@@ -45,7 +46,7 @@ const APPROXIMATE_BOOKINGS = Math.ceil(
     APPROXIMATE_AVERAGE_HOTEL_ROOMS *
     NUM_DAYS_IN_YEAR *
     OCCUPANCY_RATE) /
-  WEIGHTED_AVERAGE_NIGHTS,
+    WEIGHTED_AVERAGE_NIGHTS,
 );
 // Calculate number of guests based on expected bookings to ensure a large pool available
 const NUM_GUESTS = Math.ceil(APPROXIMATE_BOOKINGS / 2);
@@ -264,11 +265,14 @@ async function createBookingData(
 
     createBookingsForDate({
       currentDate,
-      hotelsWithRooms,
       bookingData,
-      shouldAddBooking,
       nextGuestId,
       getLengthOfStay,
+      availableHotels: getAvailableHotels(
+        currentDate,
+        hotelsWithRooms,
+        shouldAddBooking,
+      ),
     });
 
     count += bookingData.length;
