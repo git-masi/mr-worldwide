@@ -26,7 +26,6 @@ import {
   getAvailableHotels,
 } from "./utils";
 
-const NUM_DAYS_IN_YEAR = 365;
 const NOW = Temporal.Now.plainDateISO();
 const START_DATE = NOW.subtract({ years: 1 });
 const END_DATE = NOW.add({ years: 1 });
@@ -43,8 +42,8 @@ const OCCUPANCY_RATE = 0.7;
 const WEIGHTED_AVERAGE_NIGHTS = 3.6;
 // We use a formula to estimate the number of bookings we will have.
 // This is useful for determining how many guests we will need.
-// (500 * 55 * 365 * .7) / 3.6 = 1,951,736
-// From experience the number of bookings produced is closer to 2.4 million
+// (500 * 55 * 730 * .7) / 3.6 = 3,903,472
+// From experience the number of bookings produced is significantly higher
 const APPROXIMATE_BOOKINGS = Math.ceil(
   (NUM_HOTELS * APPROXIMATE_AVERAGE_HOTEL_ROOMS * NUM_DAYS * OCCUPANCY_RATE) /
     WEIGHTED_AVERAGE_NIGHTS,
@@ -266,7 +265,7 @@ async function createBookingData(
   // Write CSV header
   await write("hotel_id,guest_id,check_in,check_out\n");
 
-  // Create bookings for 1 year starting from now
+  // Creating bookings for every day from start to end (inclusive)
   let currentDate = START_DATE;
 
   while (Temporal.PlainDate.compare(currentDate, END_DATE) <= 0) {
