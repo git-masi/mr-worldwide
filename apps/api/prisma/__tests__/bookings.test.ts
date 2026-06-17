@@ -31,7 +31,7 @@ describe("createBookingsForDate", () => {
 
     expect(bookingData[0]).toEqual(`1,1,${checkInString},${checkOutString}`);
 
-    expect(rooms.getNumAvailableRooms()).toEqual(0);
+    expect(rooms.getNumAvailable()).toEqual(0);
   });
 
   test("create two bookings for different hotels", () => {

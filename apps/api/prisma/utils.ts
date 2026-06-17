@@ -60,7 +60,7 @@ export class Rooms {
     });
   }
 
-  getNumAvailableRooms() {
+  getNumAvailable() {
     return this.totalRooms - this.heap.size();
   }
 }
@@ -350,7 +350,7 @@ export function* getAvailableHotels(
     // `rooms.vacate` mutates the data in `rooms`
     hotel.rooms.vacate(currentDate);
 
-    for (const _ of range(hotel.rooms.getNumAvailableRooms())) {
+    for (const _ of range(hotel.rooms.getNumAvailable())) {
       if (shouldAddBooking()) {
         availableHotels.push(hotel);
       }

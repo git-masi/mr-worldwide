@@ -32,7 +32,7 @@ describe("Rooms", () => {
         rooms.occupy(now);
       }
 
-      expect(rooms.getNumAvailableRooms()).toEqual(expected);
+      expect(rooms.getNumAvailable()).toEqual(expected);
     });
   });
 
@@ -41,11 +41,11 @@ describe("Rooms", () => {
 
     rooms.occupy(Temporal.PlainDate.from("2026-01-02"));
 
-    expect(rooms.getNumAvailableRooms()).toEqual(0);
+    expect(rooms.getNumAvailable()).toEqual(0);
 
     rooms.vacate(Temporal.PlainDate.from("2026-01-01"));
 
-    expect(rooms.getNumAvailableRooms()).toEqual(0);
+    expect(rooms.getNumAvailable()).toEqual(0);
   });
 
   test("vacate room", () => {
@@ -53,11 +53,11 @@ describe("Rooms", () => {
 
     rooms.occupy(Temporal.PlainDate.from("2026-01-01"));
 
-    expect(rooms.getNumAvailableRooms()).toEqual(0);
+    expect(rooms.getNumAvailable()).toEqual(0);
 
     rooms.vacate(Temporal.PlainDate.from("2026-01-01"));
 
-    expect(rooms.getNumAvailableRooms()).toEqual(1);
+    expect(rooms.getNumAvailable()).toEqual(1);
   });
 
   test("vacate all rooms", () => {
@@ -67,11 +67,11 @@ describe("Rooms", () => {
     rooms.occupy(Temporal.PlainDate.from("2026-01-02"));
     rooms.occupy(Temporal.PlainDate.from("2026-01-03"));
 
-    expect(rooms.getNumAvailableRooms()).toEqual(0);
+    expect(rooms.getNumAvailable()).toEqual(0);
 
     rooms.vacate(Temporal.PlainDate.from("2026-01-03"));
 
-    expect(rooms.getNumAvailableRooms()).toEqual(3);
+    expect(rooms.getNumAvailable()).toEqual(3);
   });
 
   test("vacate some rooms", () => {
@@ -81,10 +81,10 @@ describe("Rooms", () => {
     rooms.occupy(Temporal.PlainDate.from("2026-01-02"));
     rooms.occupy(Temporal.PlainDate.from("2026-01-03"));
 
-    expect(rooms.getNumAvailableRooms()).toEqual(0);
+    expect(rooms.getNumAvailable()).toEqual(0);
 
     rooms.vacate(Temporal.PlainDate.from("2026-01-02"));
 
-    expect(rooms.getNumAvailableRooms()).toEqual(2);
+    expect(rooms.getNumAvailable()).toEqual(2);
   });
 });
