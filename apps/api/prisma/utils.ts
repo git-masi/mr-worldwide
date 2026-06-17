@@ -21,10 +21,8 @@ import { faker } from "@faker-js/faker";
 import { range, rangeForever } from "@repo/numbers/range";
 import { Temporal } from "temporal-polyfill"; // Technically not needed for node v26
 
-type Checkout = { checkOut: string };
-
 export class Rooms {
-  heap: MinHeap<Checkout>;
+  heap: MinHeap<Temporal.PlainDate>;
   totalRooms: number;
 
   constructor(totalRooms: number) {
@@ -32,17 +30,14 @@ export class Rooms {
       throw new Error("Must have 1 or more rooms");
     }
     this.totalRooms = totalRooms;
-    this.heap = new MinHeap<Checkout>((booking) => booking.checkOut);
+    this.heap = new MinHeap<Temporal.PlainDate>((date) => date.toString());
   }
 
   vacate(currentDate: Temporal.PlainDate) {
     let root = this.heap.root();
     while (
       root !== null &&
-      Temporal.PlainDate.compare(
-        currentDate,
-        Temporal.PlainDate.from(root.checkOut),
-      ) >= 0
+      Temporal.PlainDate.compare(currentDate, root) >= 0
     ) {
       this.heap.pop();
       root = this.heap.root();
@@ -55,9 +50,7 @@ export class Rooms {
       return;
     }
 
-    this.heap.push({
-      checkOut: checkOut.toString(),
-    });
+    this.heap.push(checkOut);
   }
 
   getNumAvailable() {
