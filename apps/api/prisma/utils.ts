@@ -33,12 +33,9 @@ export class Rooms {
     this.heap = new MinHeap<Temporal.PlainDate>((date) => date.toString());
   }
 
-  vacate(currentDate: Temporal.PlainDate) {
+  vacate(date: Temporal.PlainDate) {
     let root = this.heap.root();
-    while (
-      root !== null &&
-      Temporal.PlainDate.compare(currentDate, root) >= 0
-    ) {
+    while (root !== null && Temporal.PlainDate.compare(date, root) >= 0) {
       this.heap.pop();
       root = this.heap.root();
     }
