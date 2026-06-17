@@ -22,8 +22,8 @@ import { range, rangeForever } from "@repo/numbers/range";
 import { Temporal } from "temporal-polyfill"; // Technically not needed for node v26
 
 export class Rooms {
-  heap: MinHeap<Temporal.PlainDate>;
-  totalRooms: number;
+  private heap: MinHeap<Temporal.PlainDate>;
+  private totalRooms: number;
 
   constructor(totalRooms: number) {
     if (totalRooms < 1) {
