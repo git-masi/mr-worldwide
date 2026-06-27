@@ -12,5 +12,16 @@ services:
     volumes:
       - mrww_data:/var/lib/postgresql
 
+  prisma_test_db:
+    container_name: prisma_test_db
+    image: postgres:18-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: prisma
+      POSTGRES_PASSWORD: prisma
+      POSTGRES_DB: tests
+    ports:
+      - "5433:5432"
+
 volumes:
   mrww_data:
