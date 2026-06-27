@@ -1,8 +1,9 @@
 import request from "supertest";
-import { afterAll, beforeEach, describe, test } from "vitest";
+import { afterAll, beforeEach, describe, expect, test } from "vitest";
 import { initServer } from "./server";
 import prisma from "./client";
 import { faker } from "@faker-js/faker";
+import { Temporal } from "temporal-polyfill";
 
 describe("server integration tests", () => {
   const server = initServer();
@@ -17,17 +18,22 @@ describe("server integration tests", () => {
     await prisma.$disconnect();
   });
 
-  test("return status 200", () => {
-    request(server)
+  test("return status 200", async () => {
+    const res = await request(server)
       .get("/availability")
-      .query({ checkIn: "2026-01-01", checkOut: "2026-01-02" })
-      .expect(200);
+      .query({ checkIn: "2026-01-01", checkOut: "2026-01-02" });
+
+    expect(res.status).toEqual(200);
   });
 
-  test("return status 200", async () => {
+  test("return 1 room available", async () => {
+    const hotelName = "test hotel";
+    const checkIn = "2026-01-01";
+    const checkOut = "2026-01-05";
+
     const { id: hotelId } = await prisma.hotel.create({
       data: {
-        name: "test hotel",
+        name: hotelName,
         totalRooms: 2,
       },
       select: { id: true },
@@ -46,14 +52,19 @@ describe("server integration tests", () => {
       data: {
         hotelId,
         guestId,
-        checkIn: "2021-01-01",
-        checkOut: "2021-01-02",
+        checkIn: new Date(checkIn),
+        checkOut: new Date(checkOut),
       },
     });
 
-    request(server)
+    const res = await request(server)
       .get("/availability")
-      .query({ checkIn: "2026-01-01", checkOut: "2026-01-02" })
-      .expect(200);
+      .query({ checkIn: checkIn, checkOut: checkOut });
+
+    expect(res.body).toMatchObject({
+      name: hotelName,
+      id: hotelId,
+      availableRooms: 1,
+    });
   });
 });

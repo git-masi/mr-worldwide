@@ -16,7 +16,7 @@ export function initServer() {
   });
 
   app.get("/availability", async (req, res) => {
-    //
+    res.send();
   });
 
   return app;
