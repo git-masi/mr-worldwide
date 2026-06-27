@@ -16,9 +16,8 @@ export function initServer(dsn: string) {
     .use(express.json())
     .use(cors());
 
-  app.get("/users", async (req, res) => {
-    const users = await prisma.user.findMany();
-    res.json(users.map((u) => ({ ...u, id: u.id.toString() })));
+  app.get("/ping", async (req, res) => {
+    res.type("text/plain").send("pong");
   });
 
   return app;
