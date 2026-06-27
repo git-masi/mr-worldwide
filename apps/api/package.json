@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "source .env && tsx --watch src/index.ts",
     "test:seed": "vitest --dir ./prisma/__tests__",
-    "test:integration": "dotenv -e .env.test -- prisma migrate deploy && vitest run '**/*.integration.test.ts' ",
+    "test:integration": "dotenv -e .env.test -- prisma migrate deploy && vitest --dir ./src",
     "db:start": "docker compose --env-file .env up -d",
     "db:generate": "dotenv -e .env -- prisma generate",
     "db:push": "dotenv -e .env -- prisma db push",
@@ -38,9 +38,11 @@
     "@types/node": "25.9.1",
     "@types/pg": "8.20.0",
     "@types/pg-copy-streams": "^1.2.5",
+    "@types/supertest": "^7.2.0",
     "dotenv": "17.3.1",
     "dotenv-cli": "^11.0.0",
     "prisma": "7.8.0",
+    "supertest": "^7.2.2",
     "tsx": "4.22.4",
     "typescript": "6.0.3"
   }
