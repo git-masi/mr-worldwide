@@ -12,8 +12,8 @@ CREATE TABLE "bookings" (
     "id" BIGSERIAL NOT NULL,
     "hotel_id" BIGINT NOT NULL,
     "guest_id" BIGINT NOT NULL,
-    "check_in" TIMESTAMPTZ NOT NULL,
-    "check_out" TIMESTAMPTZ NOT NULL,
+    "check_in" DATE NOT NULL,
+    "check_out" DATE NOT NULL,
 
     CONSTRAINT "bookings_pkey" PRIMARY KEY ("id")
 );

@@ -20,8 +20,8 @@ model Booking {
   id       BigInt   @id @default(autoincrement())
   hotelId  BigInt   @map("hotel_id")
   guestId  BigInt   @map("guest_id")
-  checkIn  DateTime @map("check_in") @db.Timestamptz
-  checkOut DateTime @map("check_out") @db.Timestamptz
+  checkIn  DateTime @map("check_in") @db.Date
+  checkOut DateTime @map("check_out") @db.Date
 
   // A `created_at` column adds a layer of complexity to generating realistic seed data that
   // is not worth it right now.
