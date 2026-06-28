@@ -75,5 +75,56 @@ export function initServer() {
     }
   });
 
+  app.get("/availability/v2", async (req, res) => {
+    try {
+      const qp = v.parse(AvailabilityQueryParamsSchema, req.query);
+
+      const hotelBookings = (await prisma.$queryRaw`
+SELECT
+  h.id AS hotel_id,
+ 	h.name AS hotel_name,
+ 	h.total_rooms AS total_rooms,
+  COALESCE(
+      json_agg(
+          json_build_object(
+              'checkIn', b.check_in,
+              'checkOut', b.check_out
+          )
+      ) FILTER (
+        WHERE b.id IS NOT NULL
+      ),
+      '[]'::json
+  ) AS bookings
+FROM hotels h
+LEFT JOIN bookings b
+    ON b.hotel_id = h.id
+   	AND b.check_in < ${qp.checkOut}
+   	AND b.check_out > ${qp.checkIn}
+GROUP BY h.id
+ORDER BY h.id;`) as {
+        hotel_id: bigint;
+        hotel_name: string;
+        total_rooms: number;
+        bookings: { checkIn: Date; checkOut: Date }[];
+      }[];
+
+      const result = hotelBookings.map((data) => ({
+        name: data.hotel_name,
+        id: data.hotel_id.toString(),
+        availableRooms: data.total_rooms - roomsNeeded(data.bookings),
+      }));
+
+      res.json(result);
+    } catch (error) {
+      console.log(error);
+
+      if (v.isValiError(error)) {
+        res.status(400).send(error.message);
+      }
+
+      res.status(500);
+    }
+  });
+
   return app;
 }
