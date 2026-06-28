@@ -1,7 +1,7 @@
-// Subtract rooms needs from total rooms to get available rooms
-export function roomsNeeded<T extends { checkIn: Date; checkOut: Date }>(
-  bookings: T[],
-): number {
+type Booking = { checkIn: Date; checkOut: Date };
+
+// Subtract rooms needed from total rooms to get available rooms
+export function roomsNeeded(bookings: Booking[]): number {
   if (bookings.length < 2) {
     return bookings.length;
   }
@@ -11,7 +11,7 @@ export function roomsNeeded<T extends { checkIn: Date; checkOut: Date }>(
   const sortedBookings = bookings.toSorted(
     (a, b) => a.checkIn.getTime() - b.checkIn.getTime(),
   );
-  const buckets: T[][] = [];
+  const buckets: Booking[][] = [];
 
   for (const booking of sortedBookings) {
     const idx = buckets.findIndex((bucket) => {
