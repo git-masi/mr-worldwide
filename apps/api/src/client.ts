@@ -2,7 +2,10 @@ import { PrismaClient } from "../prisma/generated/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import dotenv from "dotenv";
 
-dotenv.config();
+dotenv.config({
+  override: false,
+  ...(process.env.ENV_PATH && { path: process.env.ENV_PATH }),
+});
 
 const dsn = process.env.DATABASE_URL;
 if (!dsn) {
