@@ -67,8 +67,12 @@ export function initServer() {
 
       res.json(result);
     } catch (error) {
-      // TODO: need better error handling
       console.log(error);
+
+      if (v.isValiError(error)) {
+        res.status(400).send(error.message);
+      }
+
       res.status(500);
     }
   });
