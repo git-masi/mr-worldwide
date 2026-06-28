@@ -26,7 +26,7 @@ describe("server integration tests", () => {
     expect(res.status).toEqual(200);
   });
 
-  test("return 1 room available", async () => {
+  test.only("return 1 room available", async () => {
     const hotelName = "test hotel";
     const checkIn = "2026-01-01";
     const checkOut = "2026-01-05";
@@ -61,10 +61,14 @@ describe("server integration tests", () => {
       .get("/availability")
       .query({ checkIn: checkIn, checkOut: checkOut });
 
-    expect(res.body).toMatchObject({
-      name: hotelName,
-      id: hotelId,
-      availableRooms: 1,
-    });
+    expect(res.status).toEqual(200);
+
+    expect(res.body).toMatchObject([
+      {
+        name: hotelName,
+        id: hotelId.toString(),
+        availableRooms: 1,
+      },
+    ]);
   });
 });

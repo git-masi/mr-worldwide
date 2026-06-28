@@ -1,6 +1,7 @@
 {
   "extends": ["@repo/typescript-config/base.json"],
   "compilerOptions": {
+    "lib": ["es2024"],
     "target": "es2024",
     "outDir": "./dist",
     "strictNullChecks": true,
