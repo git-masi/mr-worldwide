@@ -72,7 +72,35 @@ describe("server integration tests", () => {
     ]);
   });
 
-  test("return 1 room available", async () => {
+  test("return 2 rooms available", async () => {
+    const hotelName = "test hotel";
+    const checkIn = "2026-01-01";
+    const checkOut = "2026-01-05";
+
+    const { id: hotelId } = await prisma.hotel.create({
+      data: {
+        name: hotelName,
+        totalRooms: 2,
+      },
+      select: { id: true },
+    });
+
+    const res = await request(server)
+      .get("/availability")
+      .query({ checkIn: checkIn, checkOut: checkOut });
+
+    expect(res.status).toEqual(200);
+
+    expect(res.body).toMatchObject([
+      {
+        name: hotelName,
+        id: hotelId.toString(),
+        availableRooms: 2,
+      },
+    ]);
+  });
+
+  test("return 0 rooms available", async () => {
     const hotelName = "test hotel";
     const checkIn = "2026-01-01";
     const checkOut = "2026-01-05";
