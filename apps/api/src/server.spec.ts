@@ -3,7 +3,6 @@ import { afterAll, beforeEach, describe, expect, test } from "vitest";
 import { initServer } from "./server";
 import prisma from "./client";
 import { faker } from "@faker-js/faker";
-import { Temporal } from "temporal-polyfill";
 
 describe("server integration tests", () => {
   const server = initServer();
