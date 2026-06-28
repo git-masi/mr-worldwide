@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "license": "MIT",
   "scripts": {
-    "dev": "source .env && tsx --watch src/index.ts",
-    "test": "dotenv -e .env.test -- prisma migrate deploy && vitest --dir ./src",
-    "test:log": "dotenv -e .env.test -- prisma migrate deploy && vitest --dir ./src --disable-console-intercept",
+    "dev": "dotenv -e .env -- tsx --watch src/index.ts",
+    "test": "dotenv -e .env.test -- prisma migrate deploy && dotenv -e .env.test -- vitest --dir ./src",
+    "test:log": "dotenv -e .env.test -- prisma migrate deploy && dotenv -e .env.test -- vitest --dir ./src --disable-console-intercept",
     "test:seed": "vitest --dir ./prisma/__tests__",
     "db:start": "docker compose --env-file .env up -d",
     "db:generate": "dotenv -e .env -- prisma generate",

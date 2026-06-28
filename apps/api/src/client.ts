@@ -1,15 +1,14 @@
 import { PrismaClient } from "../prisma/generated/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import dotenv from "dotenv";
-
-dotenv.config({
-  override: false,
-  ...(process.env.ENV_PATH && { path: process.env.ENV_PATH }),
-});
 
 const dsn = process.env.DATABASE_URL;
 if (!dsn) {
   throw new Error("Missing env var DATABASE_URL");
+}
+
+console.log(dsn);
+if (dsn !== "postgresql://prisma:prisma@localhost:5433/tests") {
+  throw new Error(`invalid DSN: '${dsn}'`);
 }
 
 // This allows `BigInt` values to be serialized using `JSON.stringify`.
