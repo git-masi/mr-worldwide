@@ -26,7 +26,7 @@ describe("server integration tests", () => {
     expect(res.status).toEqual(200);
   });
 
-  test.only("return 1 room available", async () => {
+  test("return 1 room available", async () => {
     const hotelName = "test hotel";
     const checkIn = "2026-01-01";
     const checkOut = "2026-01-05";
@@ -68,6 +68,54 @@ describe("server integration tests", () => {
         name: hotelName,
         id: hotelId.toString(),
         availableRooms: 1,
+      },
+    ]);
+  });
+
+  test("return 1 room available", async () => {
+    const hotelName = "test hotel";
+    const checkIn = "2026-01-01";
+    const checkOut = "2026-01-05";
+
+    const { id: hotelId } = await prisma.hotel.create({
+      data: {
+        name: hotelName,
+        totalRooms: 2,
+      },
+      select: { id: true },
+    });
+
+    const { id: guestId } = await prisma.guest.create({
+      data: {
+        firstName: faker.person.firstName(),
+        lastName: faker.person.lastName(),
+        email: faker.internet.email(),
+      },
+      select: { id: true },
+    });
+
+    const booking = {
+      hotelId,
+      guestId,
+      checkIn: new Date(checkIn),
+      checkOut: new Date(checkOut),
+    };
+
+    await prisma.booking.createMany({
+      data: [booking, booking],
+    });
+
+    const res = await request(server)
+      .get("/availability")
+      .query({ checkIn: checkIn, checkOut: checkOut });
+
+    expect(res.status).toEqual(200);
+
+    expect(res.body).toMatchObject([
+      {
+        name: hotelName,
+        id: hotelId.toString(),
+        availableRooms: 0,
       },
     ]);
   });
