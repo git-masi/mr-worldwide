@@ -32,6 +32,8 @@ export function initServer() {
     try {
       const qp = v.parse(AvailabilityQueryParamsSchema, req.query);
 
+      const hotels = await prisma.hotel.findMany();
+
       const bookings = await prisma.booking.findMany({
         where: {
           AND: [
@@ -39,28 +41,23 @@ export function initServer() {
             { checkOut: { gt: qp.checkIn } },
           ],
         },
-        select: { checkIn: true, checkOut: true, hotel: true },
+        select: { checkIn: true, checkOut: true, hotelId: true },
       });
 
       const hotelBookings = Object.groupBy(bookings, (booking) =>
-        booking.hotel.id.toString(),
+        booking.hotelId.toString(),
       );
 
-      const result = Object.entries(hotelBookings)
-        .map(([key, value]) => {
-          if (!value) {
-            return null;
-          }
-
-          const hotel = value.at(0)?.hotel;
-          if (!hotel) {
-            return null;
-          }
+      const result = hotels
+        .map((hotel) => {
+          const hb = hotelBookings[hotel.id.toString()];
 
           return {
             name: hotel.name,
-            id: key,
-            availableRooms: hotel.totalRooms - roomsNeeded(value),
+            id: hotel.id.toString(),
+            availableRooms: hb
+              ? hotel.totalRooms - roomsNeeded(hb)
+              : hotel.totalRooms,
           };
         })
         .filter(Boolean);
