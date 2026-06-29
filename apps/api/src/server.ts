@@ -89,7 +89,7 @@ SELECT
           json_build_object(
               'checkIn', b.check_in,
               'checkOut', b.check_out
-          )
+          ) ORDER BY b.check_in
       ) FILTER (
         WHERE b.id IS NOT NULL
       ),
