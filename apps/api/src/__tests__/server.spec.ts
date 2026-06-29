@@ -1,17 +1,17 @@
 import request from "supertest";
 import { afterAll, beforeEach, describe, expect, test } from "vitest";
-import { initServer } from "./server";
-import prisma from "./client";
+import { initServer } from "../server";
+import prisma from "../client";
 import { faker } from "@faker-js/faker";
 
 describe("server integration tests", () => {
   const server = initServer();
 
   const paths = [
-    "/availability",
-    "/availability/v2",
-    "/availability/v3",
-    "/availability/v4",
+    "/v1/availability",
+    "/v2/availability",
+    "/v3/availability",
+    "/v4/availability",
   ];
 
   paths.forEach((path) => {

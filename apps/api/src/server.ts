@@ -29,7 +29,7 @@ export function initServer() {
     res.type("text/plain").send("pong");
   });
 
-  app.get("/availability", async (req, res) => {
+  app.get("/v1/availability", async (req, res) => {
     try {
       const qp = v.parse(AvailabilityQueryParamsSchema, req.query);
 
@@ -75,7 +75,7 @@ export function initServer() {
     }
   });
 
-  app.get("/availability/v2", async (req, res) => {
+  app.get("/v2/availability", async (req, res) => {
     try {
       const qp = v.parse(AvailabilityQueryParamsSchema, req.query);
 
@@ -126,7 +126,7 @@ ORDER BY h.id;`) as {
     }
   });
 
-  app.get("/availability/v3", async (req, res) => {
+  app.get("/v3/availability", async (req, res) => {
     try {
       const qp = v.parse(AvailabilityQueryParamsSchema, req.query);
 
@@ -192,7 +192,7 @@ ORDER BY id;`) as {
     }
   });
 
-  app.get("/availability/v4", async (req, res) => {
+  app.get("/v4/availability", async (req, res) => {
     try {
       const qp = v.parse(AvailabilityQueryParamsSchema, req.query);
 

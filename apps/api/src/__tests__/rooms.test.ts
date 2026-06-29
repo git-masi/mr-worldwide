@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { roomsNeeded } from "./rooms";
+import { roomsNeeded } from "../rooms";
 
 test("return 0 if no bookings", () => {
   const result = roomsNeeded([]);
