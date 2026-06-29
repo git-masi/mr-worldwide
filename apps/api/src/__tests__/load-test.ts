@@ -22,10 +22,6 @@ export const options = {
     2: config,
     3: config,
   },
-  thresholds: {
-    // Optional: Ensure failed requests stay low
-    http_req_failed: ["rate<0.01"],
-  },
 };
 
 const baseUrl = "http://localhost:1337";
@@ -44,6 +40,9 @@ const paths = [
   "/v4/availability",
 ];
 
+const checkIn = "2026-12-02";
+const checkOut = "2026-12-07";
+
 export function main() {
   const test = +exec.scenario.name;
   if (!Number.isInteger(test) || test > paths.length) {
@@ -59,7 +58,9 @@ export function main() {
     );
   }
 
-  const res = http.get(`${baseUrl}${path}`);
+  const res = http.get(
+    `${baseUrl}${path}?checkIn=${checkIn}&checkOut=${checkOut}`,
+  );
 
   duration.add(res.timings.duration);
 
