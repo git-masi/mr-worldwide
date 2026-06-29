@@ -7,6 +7,7 @@
     "test": "dotenv -e .env.test -- prisma migrate deploy && dotenv -e .env.test -- vitest --dir ./src",
     "test:log": "dotenv -e .env.test -- prisma migrate deploy && dotenv -e .env.test -- vitest --dir ./src --disable-console-intercept",
     "test:seed": "vitest --dir ./prisma/__tests__",
+    "test:load": "k6 run ./src/__tests__/load-test.ts",
     "db:start": "docker compose --env-file .env up -d",
     "db:generate": "dotenv -e .env -- prisma generate",
     "db:push": "dotenv -e .env -- prisma db push",
