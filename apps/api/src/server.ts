@@ -25,7 +25,7 @@ export function initServer() {
     .use(express.json())
     .use(cors());
 
-  app.get("/ping", async (req, res) => {
+  app.get("/ping", async (_, res) => {
     res.type("text/plain").send("pong");
   });
 
