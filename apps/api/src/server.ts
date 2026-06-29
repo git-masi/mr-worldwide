@@ -192,5 +192,76 @@ ORDER BY id;`) as {
     }
   });
 
+  app.get("/availability/v4", async (req, res) => {
+    try {
+      const qp = v.parse(AvailabilityQueryParamsSchema, req.query);
+
+      const availableRooms = (await prisma.$queryRaw`
+WITH relevant_bookings AS (
+    SELECT
+        b.hotel_id,
+        b.check_in,
+        b.check_out
+    FROM bookings b
+    WHERE daterange(b.check_in, b.check_out, '[)')
+        && daterange(${qp.checkIn}, ${qp.checkOut}, '[)')
+),
+event_points AS (
+    SELECT
+        hotel_id,
+        check_in AS event_date,
+        1 AS delta
+    FROM relevant_bookings
+
+    UNION ALL
+
+    SELECT
+        hotel_id,
+        check_out AS event_date,
+        -1 AS delta
+    FROM relevant_bookings
+),
+occupancy AS (
+    SELECT
+        hotel_id,
+        event_date,
+        SUM(delta) OVER (
+            PARTITION BY hotel_id
+            ORDER BY event_date, delta ASC
+        ) AS rooms_occupied
+    FROM event_points
+),
+peak_usage AS (
+    SELECT
+        hotel_id,
+        MAX(rooms_occupied) AS max_rooms_required
+    FROM occupancy
+    GROUP BY hotel_id
+)
+SELECT
+    h.id,
+    h.name,
+    (h.total_rooms - COALESCE(p.max_rooms_required, 0))::int AS "availableRooms"
+FROM hotels h
+LEFT JOIN peak_usage p
+    ON p.hotel_id = h.id
+ORDER BY h.id;`) as {
+        id: string;
+        name: string;
+        availableRooms: number;
+      }[];
+
+      res.json(availableRooms);
+    } catch (error) {
+      console.error(error);
+
+      if (v.isValiError(error)) {
+        res.status(400).send(error.message);
+      }
+
+      res.status(500);
+    }
+  });
+
   return app;
 }
