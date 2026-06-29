@@ -105,7 +105,7 @@ ORDER BY h.id;`) as {
         hotel_id: bigint;
         hotel_name: string;
         total_rooms: number;
-        bookings: { checkIn: Date; checkOut: Date }[];
+        bookings: { checkIn: string; checkOut: string }[];
       }[];
 
       const result = hotelBookings.map((data) => ({
