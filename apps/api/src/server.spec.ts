@@ -7,7 +7,7 @@ import { faker } from "@faker-js/faker";
 describe("server integration tests", () => {
   const server = initServer();
 
-  const paths = ["/availability", "/availability/v2"];
+  const paths = ["/availability", "/availability/v2", "/availability/v3"];
 
   paths.forEach((path) => {
     describe(`testing path: ${path}`, () => {
@@ -67,11 +67,11 @@ describe("server integration tests", () => {
         expect(res.status).toEqual(200);
 
         expect(res.body).toMatchObject([
-          {
+          expect.objectContaining({
             name: hotelName,
             id: hotelId.toString(),
             availableRooms: 1,
-          },
+          }),
         ]);
       });
 
@@ -95,11 +95,11 @@ describe("server integration tests", () => {
         expect(res.status).toEqual(200);
 
         expect(res.body).toMatchObject([
-          {
+          expect.objectContaining({
             name: hotelName,
             id: hotelId.toString(),
             availableRooms: 2,
-          },
+          }),
         ]);
       });
 
@@ -143,11 +143,11 @@ describe("server integration tests", () => {
         expect(res.status).toEqual(200);
 
         expect(res.body).toMatchObject([
-          {
+          expect.objectContaining({
             name: hotelName,
             id: hotelId.toString(),
             availableRooms: 0,
-          },
+          }),
         ]);
       });
     });

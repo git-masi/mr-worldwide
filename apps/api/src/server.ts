@@ -65,7 +65,7 @@ export function initServer() {
 
       res.json(result);
     } catch (error) {
-      console.log(error);
+      console.error(error);
 
       if (v.isValiError(error)) {
         res.status(400).send(error.message);
@@ -116,7 +116,73 @@ ORDER BY h.id;`) as {
 
       res.json(result);
     } catch (error) {
-      console.log(error);
+      console.error(error);
+
+      if (v.isValiError(error)) {
+        res.status(400).send(error.message);
+      }
+
+      res.status(500);
+    }
+  });
+
+  app.get("/availability/v3", async (req, res) => {
+    try {
+      const qp = v.parse(AvailabilityQueryParamsSchema, req.query);
+
+      const availableRooms = (await prisma.$queryRaw`
+WITH requested_dates AS (
+    SELECT generate_series(
+        ${qp.checkIn}::date,
+        (${qp.checkOut}::date - INTERVAL '1 day'),
+        INTERVAL '1 day'
+    )::date AS booking_date
+),
+daily_hotel_usage AS (
+    SELECT
+        h.id AS hotel_id,
+        h.name AS hotel_name,
+        h.total_rooms,
+        d.booking_date,
+        COUNT(b.id) AS rooms_needed
+    FROM hotels h
+    CROSS JOIN requested_dates d
+    LEFT JOIN bookings b
+        ON b.hotel_id = h.id
+        AND d.booking_date >= b.check_in
+        AND d.booking_date < b.check_out
+    GROUP BY
+        h.id,
+        h.name,
+        h.total_rooms,
+        d.booking_date
+),
+peak_usage AS (
+    SELECT
+        hotel_id,
+        hotel_name,
+        total_rooms,
+        MAX(rooms_needed) AS max_rooms_required
+    FROM daily_hotel_usage
+    GROUP BY
+        hotel_id,
+        hotel_name,
+        total_rooms
+)
+SELECT
+    hotel_id::text AS id,
+    hotel_name AS name,
+    (total_rooms - max_rooms_required)::int AS "availableRooms"
+FROM peak_usage
+ORDER BY id;`) as {
+        id: string;
+        name: string;
+        availableRooms: number;
+      }[];
+
+      res.json(availableRooms);
+    } catch (error) {
+      console.error(error);
 
       if (v.isValiError(error)) {
         res.status(400).send(error.message);
