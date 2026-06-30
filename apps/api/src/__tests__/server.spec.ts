@@ -12,6 +12,7 @@ describe("server integration tests", () => {
     "/v2/availability",
     "/v3/availability",
     "/v4/availability",
+    "/v5/availability",
   ];
 
   paths.forEach((path) => {
