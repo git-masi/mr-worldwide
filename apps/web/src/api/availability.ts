@@ -16,7 +16,8 @@ export async function fetchAvailability(
     checkIn: formatDate(checkIn),
     checkOut: formatDate(checkOut),
   });
-  const res = await fetch(`/v4/availability?${params}`);
+  // TODO: use an env var for the base URL
+  const res = await fetch(`http://localhost:1337/v5/availability?${params}`);
   if (!res.ok) throw new Error("Failed to fetch availability");
   return res.json();
 }
