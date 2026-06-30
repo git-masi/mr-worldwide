@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 1. Define the array of versions you want to test
-VERSIONS=("v1" "v2" "v3" "v4")
+VERSIONS=("v1" "v2" "v3" "v4" "v5")
 
 # Path to your test script
 TEST_SCRIPT="./src/__tests__/load-test.ts"

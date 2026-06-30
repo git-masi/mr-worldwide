@@ -1,8 +1,7 @@
 import fs from "fs";
-import path from "path";
 
 // Configuration: define the files we want to parse
-const versions = ["v1", "v2", "v3", "v4"];
+const versions = ["v1", "v2", "v3", "v4", "v5"];
 const summaryData: {
   version: string;
   avg: string;
@@ -68,7 +67,7 @@ ${summaryData.map((row) => `| **${row.version}** | ${row.avg} ms | ${row.med} ms
 `;
 
 // Save the Markdown report to disk
-const outputPath = "./temp/performance_report.md";
+const outputPath = "./temp/performance_report_2.md";
 fs.writeFileSync(outputPath, markdownContent, "utf8");
 
 console.log(`\n✅ Markdown report successfully generated at: ${outputPath}\n`);
